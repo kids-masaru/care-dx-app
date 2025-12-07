@@ -187,13 +187,18 @@ def setup_gspread(service_account_path):
                 service_account_path, scope
             )
         # 2. Streamlit Secretsから認証を試みる (Deployment用)
-        elif "gcp_service_account" in st.secrets:
-            # st.secretsはTOML形式だが、辞書としてアクセス可能
-            # google-authライブラリなどでは dict をそのまま使える
-            service_account_info = st.secrets["gcp_service_account"]
-            credentials = ServiceAccountCredentials.from_json_keyfile_dict(
-                service_account_info, scope
-            )
+        elif True: # 条件を単純化し、内部でtry-exceptする
+            try:
+                if "gcp_service_account" in st.secrets:
+                    service_account_info = st.secrets["gcp_service_account"]
+                    credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+                        service_account_info, scope
+                    )
+                else:
+                    raise FileNotFoundError
+            except Exception:
+                 # secretsが見つからない場合やキーがない場合は次へ
+                 raise FileNotFoundError(f"Service account file not found at {service_account_path} and no secrets configured.")
         else:
              raise FileNotFoundError(f"Service account file not found at {service_account_path} and no secrets configured.")
 
@@ -938,8 +943,13 @@ with st.sidebar:
     
     # Gemini APIキー（環境変数 or Secretsから取得）
     default_api_key = os.getenv("GEMINI_API_KEY", "")
-    if not default_api_key and "GEMINI_API_KEY" in st.secrets:
-        default_api_key = st.secrets["GEMINI_API_KEY"]
+    try:
+        if not default_api_key and "GEMINI_API_KEY" in st.secrets:
+            default_api_key = st.secrets["GEMINI_API_KEY"]
+    except FileNotFoundError:
+        pass  # secrets.tomlがない場合は無視
+    except Exception:
+        pass  # その他のエラーも無視（StreamlitSecretNotFoundErrorなど）
         
     api_key = default_api_key # デフォルト値を使用
     
@@ -1117,10 +1127,19 @@ with st.sidebar:
             st.success(f"(OK) config/に保存済み（{SERVICE_ACCOUNT_PATH}）")
         elif root_service_account.exists():
             st.success(f"(OK) ルートディレクトリに配置済み（./service_account.json）")
-        elif "gcp_service_account" in st.secrets:
-            st.success("(OK) Streamlit Secretsから設定済み")
         else:
-            st.warning("(!)未設定")
+            # Secrets確認（try-exceptで安全に）
+            is_secrets_set = False
+            try:
+                if "gcp_service_account" in st.secrets:
+                   is_secrets_set = True
+            except:
+                pass
+            
+            if is_secrets_set:
+                st.success("(OK) Streamlit Secretsから設定済み")
+            else:
+                st.warning("(!)未設定")
         
         service_upload = st.file_uploader(
             "service_account.jsonをアップロード（更新）",
