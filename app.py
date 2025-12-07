@@ -936,9 +936,12 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
     
-    # Gemini APIキー（環境変数から取得、なければ空文字）
+    # Gemini APIキー（環境変数 or Secretsから取得）
     default_api_key = os.getenv("GEMINI_API_KEY", "")
-    api_key = default_api_key # デフォルト値を使用し、サイドバーには表示しない（詳細設定へ移動）
+    if not default_api_key and "GEMINI_API_KEY" in st.secrets:
+        default_api_key = st.secrets["GEMINI_API_KEY"]
+        
+    api_key = default_api_key # デフォルト値を使用
     
     # モデル選択（環境変数から取得、なければデフォルト値）
     default_model = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
@@ -1112,12 +1115,10 @@ with st.sidebar:
             st.success(f"(OK) .envで設定: `{env_service_account_path}`")
         elif SERVICE_ACCOUNT_PATH.exists():
             st.success(f"(OK) config/に保存済み（{SERVICE_ACCOUNT_PATH}）")
-            if st.button("削除 - config/のservice_account.jsonを削除"):
-                SERVICE_ACCOUNT_PATH.unlink()
-                st.rerun()
         elif root_service_account.exists():
             st.success(f"(OK) ルートディレクトリに配置済み（./service_account.json）")
-            st.info("(i) **推奨**: `.env`に `SERVICE_ACCOUNT_PATH=./service_account.json` を追加してください")
+        elif "gcp_service_account" in st.secrets:
+            st.success("(OK) Streamlit Secretsから設定済み")
         else:
             st.warning("(!)未設定")
         
