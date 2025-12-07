@@ -180,13 +180,31 @@ def setup_gspread(service_account_path):
             'https://spreadsheets.google.com/feeds',
             'https://www.googleapis.com/auth/drive'
         ]
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(
-            service_account_path, scope
-        )
+        
+        # 1. ファイルパスから認証を試みる
+        if os.path.exists(service_account_path):
+            credentials = ServiceAccountCredentials.from_json_keyfile_name(
+                service_account_path, scope
+            )
+        # 2. Streamlit Secretsから認証を試みる (Deployment用)
+        elif "gcp_service_account" in st.secrets:
+            # st.secretsはTOML形式だが、辞書としてアクセス可能
+            # google-authライブラリなどでは dict をそのまま使える
+            service_account_info = st.secrets["gcp_service_account"]
+            credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+                service_account_info, scope
+            )
+        else:
+             raise FileNotFoundError(f"Service account file not found at {service_account_path} and no secrets configured.")
+
         client = gspread.authorize(credentials)
         return client
     except Exception as e:
-        st.error(f"Google Sheets認証エラー: {str(e)}")
+        status_text = "Google Sheets認証設定が不足しています。"
+        if "gcp_service_account" not in st.secrets and not os.path.exists(service_account_path):
+             status_text += "\n(ローカル: service_account.jsonが必要です / クラウド: Secretsにgcp_service_account設定が必要です)"
+        
+        st.error(f"{status_text}\nエラー詳細: {str(e)}")
         return None
 
 
