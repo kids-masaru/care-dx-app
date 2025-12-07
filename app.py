@@ -762,14 +762,28 @@ def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, 
     env_service_account_path = os.getenv("SERVICE_ACCOUNT_PATH", "")
     root_service_account = Path("./service_account.json")
     
-    if env_service_account_path and os.path.exists(env_service_account_path):
+    service_path = ""
+    # 優先順位: Secrets > .env > config/ > ルート
+    
+    # Secrets確認
+    is_secrets_valid = False
+    try:
+        if "gcp_service_account" in st.secrets:
+            is_secrets_valid = True
+    except:
+        pass
+
+    if is_secrets_valid:
+        # Secretsが有効なら、パスはダミーで良い（setup_gspread側でSecretsを使うため）
+        service_path = "secrets://gcp_service_account"
+    elif env_service_account_path and os.path.exists(env_service_account_path):
         service_path = env_service_account_path
     elif SERVICE_ACCOUNT_PATH.exists():
         service_path = str(SERVICE_ACCOUNT_PATH)
     elif root_service_account.exists():
         service_path = str(root_service_account)
     else:
-        st.error("❌ service_account.jsonが見つかりません。サイドバーの「⚙️ 詳細設定」からアップロードしてください")
+        st.error("❌ service_account.jsonが見つかりません。サイドバーの「⚙️ 詳細設定」からアップロードするか、Secretsを設定してください")
         return False, None, 0
     
     # Google Sheets認証
