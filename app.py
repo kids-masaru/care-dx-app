@@ -508,11 +508,22 @@ def generate_management_meeting_summary(model, transcript):
     """運営会議用の要約生成 (JSON形式で出力)"""
     prompt = """
 あなたは、医療・福祉分野のプロの記録担当者です。
-入力された「会議の文字起こしテキスト」を分析し、以下の3つのセクションに情報を整理して、**JSON形式**で出力してください。
+入力された「会議の文字起こしテキスト」を分析し、以下の情報を抽出・整理して、**JSON形式**で出力してください。
 
 ## 出力するJSONのキーと作成ルール
 
-1. "agenda" (議題項目)
+1. "meeting_date" (日時)
+   - 会議の実施日と時間を抽出してください。
+   - 例: "令和7年10月6日（月）8時30分～8時40分"
+
+2. "place" (開催場所)
+   - 開催場所を抽出してください。「場所は～」などの説明は不要です。
+
+3. "participants" (参加者)
+   - 参加者の名前を抽出し、「、」区切りの文字列にしてください。
+   - 例: "武島、加藤、川路"
+
+4. "agenda" (議題項目)
    - 以下の議題リストを確認し、話された内容が含まれていれば行末に「●」を付けてください。
    - 話されていない項目はそのまま記述してください。
    - 形式はリスト形式ではなく、改行を含む1つのテキスト文字列としてください。
@@ -526,13 +537,13 @@ def generate_management_meeting_summary(model, transcript):
    ⑥利用者からの苦情があった場合は、その内容及び改善方針
    ⑦その他必要な事項
 
-2. "support_24h" (24時間対応)
+5. "support_24h" (24時間対応)
    - 「24時間連絡対応」「営業時間外の対応」に関する発言があればまとめてください。
    - 日時、対応者、内容（退所など）を含めてください。
    - 文体: 「～とのこと」「～あり」などの体言止め。
    - なければ「特になし」としてください。
 
-3. "sharing_matters" (共有事項)
+6. "sharing_matters" (共有事項)
    - 利用者情報の共有（利用開始、終了、状態変化など）や、その他の共有事項を抽出してください。
    - 形式:
      ■利用者情報共有
@@ -543,6 +554,9 @@ def generate_management_meeting_summary(model, transcript):
 
 ## 出力例 (JSON)
 {
+  "meeting_date": "令和7年10月6日（月）8時30分～8時40分",
+  "place": "第一会議室",
+  "participants": "武島、加藤、川路",
   "agenda": "①現に抱える処遇困難ケースについて●\\n②過去に取り扱ったケースについての問題点及びその改善方策\\n...",
   "support_24h": "12/5 18:00 佐藤対応: 〇〇様転倒により救急搬送。入院となる。",
   "sharing_matters": "■利用者情報共有\\n〇武島（ケアマネ）：宮城様 老健退所後の自宅生活...\\n\\n■その他共有事項\\n〇リハビリ：松浦クリニックでの利用が可能か..."
@@ -576,17 +590,24 @@ def write_management_meeting_to_row(client, spreadsheet_id, data, date_str, time
             ws.append_row(["日時", "参加者", "議題項目", "24時間対応", "場所・共有事項"])
 
         # 書き込むデータ（5列）
-        # A: 日時 (YYYY年MM月DD日 HH:MM~HH:MM)
-        col_a = f"{date_str} {time_str}"
-        # B: 参加者
-        col_b = participants
+        # A: 日時 (UI入力優先、なければAI抽出)
+        ui_dt = f"{date_str} {time_str}".strip()
+        ai_dt = data.get("meeting_date", "")
+        col_a = ui_dt if (date_str and time_str) else (ai_dt if ai_dt else ui_dt)
+
+        # B: 参加者 (UI入力優先)
+        col_b = participants if participants else data.get("participants", "")
+        
         # C: 議題（JSONから）
         col_c = data.get("agenda", "")
+        
         # D: 24h（JSONから）
         col_d = data.get("support_24h", "")
-        # E: 場所 + 共有事項
+        
+        # E: 場所 + 共有事項 (場所はUI優先)
+        site = place if place else data.get("place", "")
         sharing = data.get("sharing_matters", "")
-        col_e = f"場所: {place}\n\n{sharing}"
+        col_e = f"場所: {site}\n\n{sharing}"
 
         # 追記実行
         ws.append_row([col_a, col_b, col_c, col_d, col_e])
