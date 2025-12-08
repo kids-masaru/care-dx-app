@@ -33,9 +33,21 @@ SERVICE_ACCOUNT_PATH = CONFIG_DIR / "service_account.json"
 
 
 # ページ設定
+# ページ設定
+icon_path = Path("config/app_icon.png")
+page_icon = str(icon_path) if icon_path.exists() else "📋"
+
+# 画像ファイルとして読み込んで指定する（PWA/Favicon対応強化）
+from PIL import Image
+try:
+    if icon_path.exists():
+        page_icon = Image.open(icon_path)
+except Exception:
+    pass
+
 st.set_page_config(
     page_title="介護DX - 帳票自動転記アプリ",
-    page_icon="📋",
+    page_icon=page_icon,
     layout="wide"
 )
 
@@ -118,24 +130,13 @@ def setup_gemini(api_key, model_name="gemini-2.5-pro"):
         }
         
         # 安全設定（医療・介護文書のため、誤検知によるブロックを回避）
-        safety_settings = [
-            {
-                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                "threshold": "BLOCK_NONE"
-            },
-            {
-                "category": "HARM_CATEGORY_HATE_SPEECH",
-                "threshold": "BLOCK_NONE"
-            },
-            {
-                "category": "HARM_CATEGORY_HARASSMENT",
-                "threshold": "BLOCK_NONE"
-            },
-            {
-                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                "threshold": "BLOCK_NONE"
-            }
-        ]
+        # BLOCK_NONE を指定して、過剰なフィルタリングを防止
+        safety_settings = {
+            "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
+            "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
+            "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
+            "HARM_CATEGORY_DANGEROUS_CONTENT": "BLOCK_NONE",
+        }
         
         model = genai.GenerativeModel(
             model_name=model_name,
@@ -968,7 +969,7 @@ with st.sidebar:
     api_key = default_api_key # デフォルト値を使用
     
     # モデル選択（環境変数から取得、なければデフォルト値）
-    default_model = os.getenv("GEMINI_MODEL", "gemini-2.5-pro")
+    default_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     model_options = [
         "gemini-2.0-flash",
         "gemini-2.5-flash-lite",
