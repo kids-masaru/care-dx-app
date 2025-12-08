@@ -579,7 +579,7 @@ def generate_management_meeting_summary(model, transcript):
 
 
 def write_management_meeting_to_row(client, spreadsheet_id, data, date_str, time_str, place, participants, sheet_name=None):
-    """運営会議録を行追記（列固定: A=日時, B=参加者, C=議題, D=24h, E=場所+共有）"""
+    """運営会議録を行追記（ヘッダー自動検知）"""
     try:
         sh = client.open_by_key(spreadsheet_id)
         try:
@@ -587,33 +587,63 @@ def write_management_meeting_to_row(client, spreadsheet_id, data, date_str, time
         except:
             ws = sh.add_worksheet(title=sheet_name, rows=100, cols=20)
             # ヘッダー作成（初回のみ）
-            ws.append_row(["日時", "参加者", "議題項目", "24時間対応", "場所・共有事項"])
+            # デフォルトは分離形式にする
+            ws.append_row(["日時", "開催場所", "参加者", "議題項目", "24時間対応", "共有事項"])
 
-        # 書き込むデータ（5列）
-        # A: 日時 (UI入力優先、なければAI抽出)
+        # ヘッダーを読み込む
+        headers = ws.row_values(1)
+        if not headers:
+             # ヘッダーがない場合は作成して再取得
+             headers = ["日時", "開催場所", "参加者", "議題項目", "24時間対応", "共有事項"]
+             ws.append_row(headers)
+
+        # データの準備
+        # 日時
         ui_dt = f"{date_str} {time_str}".strip()
         ai_dt = data.get("meeting_date", "")
-        col_a = ui_dt if (date_str and time_str) else (ai_dt if ai_dt else ui_dt)
+        val_date = ui_dt if (date_str and time_str) else (ai_dt if ai_dt else ui_dt)
 
-        # B: 参加者 (UI入力優先)
-        col_b = participants if participants else data.get("participants", "")
+        # 参加者
+        val_participants = participants if participants else data.get("participants", "")
         
-        # C: 議題（JSONから）
-        col_c = data.get("agenda", "")
-        
-        # D: 24h（JSONから）
-        col_d = data.get("support_24h", "")
-        
-        # E: 場所 + 共有事項 (場所はUI優先)
-        site = place if place else data.get("place", "")
-        sharing = data.get("sharing_matters", "")
-        col_e = f"場所: {site}\n\n{sharing}"
+        # 場所
+        val_place = place if place else data.get("place", "")
+
+        # その他
+        val_agenda = data.get("agenda", "")
+        val_24h = data.get("support_24h", "")
+        val_sharing = data.get("sharing_matters", "")
+
+        # 行データの構築
+        row_data = []
+        for header in headers:
+            # ヘッダー名に基づいてデータをマッピング
+            h = header.strip()
+            if "日時" in h:
+                row_data.append(val_date)
+            elif "参加者" in h:
+                row_data.append(val_participants)
+            elif "場所・共有" in h: # 古い/結合カラム
+                # 結合して入れる
+                row_data.append(f"場所: {val_place}\n\n{val_sharing}")
+            elif "場所" in h:
+                row_data.append(val_place)
+            elif "共有" in h:
+                row_data.append(val_sharing)
+            elif "議題" in h:
+                row_data.append(val_agenda)
+            elif "24時間" in h:
+                row_data.append(val_24h)
+            else:
+                row_data.append("") # 不明なカラムは空
 
         # 追記実行
-        ws.append_row([col_a, col_b, col_c, col_d, col_e])
+        ws.append_row(row_data)
         
         return True, sh.url, 1
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         st.error(f"運営会議書き込みエラー: {e}")
         return False, None, 0
 
@@ -705,18 +735,26 @@ def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, 
     target_sheet_url = None
     
     # テンプレート保護が有効な場合はコピーを作成
-    if enable_template_protection:
+    # ただし、運営会議録の場合はGAS側で新規作成するため、アプリ側での新規作成はスキップする（矛盾回避）
+    if enable_template_protection and sheet_type != "運営会議録":
         with st.spinner("📋 スプレッドシートをコピー中..."):
-            user_name = st.session_state.extracted_data.get("利用者情報_氏名_漢字")
-            if not user_name:
-                user_name = st.session_state.extracted_data.get("氏名", "利用者未定")
-            if user_name and isinstance(user_name, str):
-                user_name = user_name.replace(" ", "").replace("　", "")
-            if not user_name: user_name = "利用者未定"
-                
+            year_month = datetime.datetime.now().strftime("%Y%m") # 日付は入れないが、一応ユニークに
+            
+            # アセスメントシートの場合は利用者名を入れる
+            user_name_prefix = ""
+            if sheet_type == "アセスメントシート":
+                 user_name = st.session_state.extracted_data.get("利用者情報_氏名_漢字")
+                 if not user_name:
+                     user_name = st.session_state.extracted_data.get("氏名", "利用者未定")
+                 if user_name and isinstance(user_name, str):
+                     user_name = user_name.replace(" ", "").replace("　", "")
+                 if not user_name: user_name = "利用者未定"
+                 user_name_prefix = f"{user_name}_"
+            
             import datetime
             date_str = datetime.datetime.now().strftime("%Y%m%d")
-            new_filename = f"{user_name}_{date_str}_{sheet_type}"
+            # 新規ファイル名の生成
+            new_filename = f"{user_name_prefix}{date_str}_{sheet_type}"
             
             new_id, new_url = copy_spreadsheet(client, spreadsheet_id, new_filename, destination_folder_id)
             if new_id:
@@ -743,6 +781,8 @@ def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, 
                     st.success("✅ スプレッドシートの最終行に会議録を追記しました")
             elif sheet_type == "運営会議録":
                  # 運営会議: 行追記ロジック
+                 # GAS連携のため「貼り付け用」シートに書き込むことを推奨
+                 target_sheet_name = sheet_name if sheet_name else "貼り付け用"
                  meta = st.session_state.get('meeting_meta', {})
                  success, sheet_url, write_count = write_management_meeting_to_row(
                     client, target_sheet_id, st.session_state.extracted_data,
@@ -939,10 +979,15 @@ with st.sidebar:
         
         # テンプレート保護機能
         st.markdown("**出力設定**")
+        # 運営会議の場合はデフォルトOFF（GAS連携のため）
+        default_protection = True
+        if sheet_type == "運営会議録":
+            default_protection = False
+            
         enable_template_protection = st.checkbox(
-            "テンプレート保護を有効化 (推奨)",
-            value=True,  # デフォルト有効
-            help="有効にすると、元のスプレッドシートをコピーして新規作成します（元のファイルを上書きしません）"
+            "テンプレート保護を有効化 (新規ファイル作成)",
+            value=default_protection, 
+            help="有効にすると、元のスプレッドシートをコピーして新規作成します（元のファイルを上書きしません）。GAS連携のみの場合はOFFにしてください。"
         )
         
         # コピー先フォルダ指定（保護有効時のみ表示）
@@ -1283,6 +1328,12 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                         summary_json = generate_management_meeting_summary(model, transcript_text)
                         
                         if summary_json:
+                            # UI入力値を上書きまたはマージする (ユーザーが正しい値を入力している前提)
+                            meta = st.session_state.meeting_meta
+                            summary_json["meeting_date"] = f"{meta['date_str']} {meta['time_str']}"
+                            summary_json["place"] = meta["place"]
+                            summary_json["participants"] = meta["participants"]
+                            
                             st.session_state.extracted_data = summary_json
                             st.success("✅ 議事録の作成に成功しました")
                         else:
@@ -1314,9 +1365,9 @@ if st.session_state.extracted_data:
     
     with st.expander("📊 抽出結果詳細を表示", expanded=False):
         
-        # 運営会議の場合はシンプルに表示
-        if st.session_state.sheet_type == "運営会議録":
-            st.markdown("### 📋 運営会議 抽出結果")
+        # 会議録系（運営会議・サービス担当者会議）の場合はシンプルに表示
+        if st.session_state.sheet_type in ["運営会議録", "サービス担当者会議議事録"]:
+            st.markdown(f"### 📋 {st.session_state.sheet_type} 抽出結果")
             st.json(st.session_state.extracted_data)
         else:
             # タブで表示を切り替え
@@ -1393,8 +1444,7 @@ if st.session_state.extracted_data:
 
         
         # データを表示
-        if st.session_state.sheet_type != "運営会議録":
-             st.json(st.session_state.extracted_data)
+
     
 
     
