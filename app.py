@@ -33,8 +33,7 @@ SERVICE_ACCOUNT_PATH = CONFIG_DIR / "service_account.json"
 
 
 # ページ設定
-# ページ設定
-icon_path = Path("config/app_icon.png")
+icon_path = Path("assets/icon.png")
 page_icon = str(icon_path) if icon_path.exists() else "📋"
 
 # 画像ファイルとして読み込んで指定する（PWA/Favicon対応強化）
@@ -46,10 +45,35 @@ except Exception:
     pass
 
 st.set_page_config(
-    page_title="介護DX - 帳票自動転記アプリ",
+    page_title="介護DX カカナイ",
     page_icon=page_icon,
     layout="wide"
 )
+
+# カスタムCSS（タイトル・設定ボックスの高さ調整）
+st.markdown("""
+<style>
+    /* 青い箱（expander等）の高さを低く */
+    .stExpander {
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    .stExpander > div:first-child {
+        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+    }
+    /* サイドバーのタイトルを小さく */
+    .sidebar .stMarkdown h3 {
+        font-size: 1rem !important;
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    /* セレクトボックスのマージン削減 */
+    .stSelectbox {
+        margin-bottom: 0.5rem !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 # セッション状態の初期化
 if 'extracted_data' not in st.session_state:
