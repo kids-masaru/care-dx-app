@@ -678,7 +678,11 @@ def write_service_meeting_to_row(client, sheet_id, data_dict, sheet_name=None):
             val = ""
             for key, value in data_dict.items():
                 if key in header or header in key:
-                    val = value
+                    # リストの場合は改行区切りの文字列に変換
+                    if isinstance(value, list):
+                        val = "\n".join([str(item) for item in value])
+                    else:
+                        val = value
                     break
             row_data.append(val)
             
@@ -746,8 +750,8 @@ def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, 
     target_sheet_url = None
     
     # テンプレート保護が有効な場合はコピーを作成
-    # ただし、運営会議録の場合はGAS側で新規作成するため、アプリ側での新規作成はスキップする（矛盾回避）
-    if enable_template_protection and sheet_type != "運営会議録":
+    # ただし、運営会議録・サービス担当者会議はGAS側で新規作成するため、アプリ側での新規作成はスキップする
+    if enable_template_protection and sheet_type not in ["運営会議録", "サービス担当者会議議事録"]:
         with st.spinner("📋 スプレッドシートをコピー中..."):
             import datetime
             year_month = datetime.datetime.now().strftime("%Y%m") # 日付は入れないが、一応ユニークに
@@ -785,11 +789,13 @@ def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, 
         else:
             # 音声モード
             if sheet_type == "サービス担当者会議議事録":
+                # GAS連携のため「貼り付け用」シートに書き込む
+                target_sheet_name = sheet_name if sheet_name else "貼り付け用"
                 success, sheet_url, write_count = write_service_meeting_to_row(
-                    client, target_sheet_id, st.session_state.extracted_data, sheet_name
+                    client, target_sheet_id, st.session_state.extracted_data, target_sheet_name
                 )
                 if success:
-                    st.success("✅ スプレッドシートの最終行に会議録を追記しました")
+                    st.success("✅ 「貼り付け用」シートに会議録を追記しました（GASで自動作成されます）")
             elif sheet_type == "運営会議録":
                  # 運営会議: 行追記ロジック
                  # GAS連携のため「貼り付け用」シートに書き込むことを推奨
