@@ -444,8 +444,10 @@ def extract_from_audio(model, audio_file):
     # Refactoring to allow different logic is handled in the main loop.
     pass
 
-def generate_service_meeting_summary(model, transcript):
-    """サービス担当者会議用の要約生成"""
+def generate_service_meeting_summary(model, transcript_or_audio):
+    """Generate summary for service provider meeting"""
+    is_text = isinstance(transcript_or_audio, str)
+    transcript = transcript_or_audio if is_text else ""
     prompt = """
 あなたは、ケアマネジメントの専門知識を有する、医療・福祉分野のプロの記録担当者です。
 入力された「会議の文字起こしテキスト」を詳細に分析し、指定された項目を抽出・要約して、
@@ -492,8 +494,12 @@ JSON出力例:
 }
 """
     try:
-        response = model.generate_content(prompt)
-        # JSONクリーニング
+        if is_text:
+            response = model.generate_content(prompt)
+        else:
+            # Audio file direct analysis
+            response = model.generate_content([transcript_or_audio, prompt])
+        # JSON cleaning
         text = response.text
         if "```json" in text:
             text = text.split("```json")[1].split("```")[0]
@@ -1334,7 +1340,13 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                         status_text.text("🤖 会議の要約と項目抽出を実行中... (Summarizing...)")
                         progress_bar.progress(80)
                         
-                        summary_data = generate_service_meeting_summary(model, transcript_text)
+                        # Check if transcription failed or is too short
+                        use_audio = ("（文字起こし失敗）" in transcript_text) or (len(transcript_text) < 100)
+                        if use_audio and audio_file:
+                            status_text.text("🤖 音声データから直接要約を作成中...")
+                            summary_data = generate_service_meeting_summary(model, audio_file)
+                        else:
+                            summary_data = generate_service_meeting_summary(model, transcript_text)
                         
                         if summary_data:
                             # 抽出データを保存
