@@ -950,16 +950,34 @@ def write_to_sheet(client, spreadsheet_id: str, mapping_dict: Dict, extracted_da
 
 # メインUI
 # カラースキーム: Blue (#4A90E2), Light Gray (#F7F9FC), Green (#2ECC71)
-st.markdown("""
-<div style='padding: 12px 20px; background: #4A90E2; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
-    <h1 style='color: white; margin: 0; font-size: 1.8em; text-align: center; font-weight: 600;'>
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="white" style="vertical-align: middle; margin-right: 10px;">
-            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-        </svg>
-        介護DX カカナイ
-    </h1>
-</div>
-""", unsafe_allow_html=True)
+
+# アイコン画像をBase64でエンコード
+import base64
+icon_base64 = ""
+try:
+    icon_file = Path("assets/icon.png")
+    if icon_file.exists():
+        with open(icon_file, "rb") as f:
+            icon_base64 = base64.b64encode(f.read()).decode()
+except:
+    pass
+
+# ヘッダー表示（アイコン付き）
+if icon_base64:
+    st.markdown(f"""
+    <div style='padding: 15px 20px; background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%); border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3); display: flex; align-items: center; justify-content: center; gap: 15px;'>
+        <img src="data:image/png;base64,{icon_base64}" style="width: 50px; height: 50px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);" />
+        <h1 style='color: white; margin: 0; font-size: 1.8em; font-weight: 600;'>介護DX カカナイ</h1>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown("""
+    <div style='padding: 12px 20px; background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%); border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);'>
+        <h1 style='color: white; margin: 0; font-size: 1.8em; text-align: center; font-weight: 600;'>
+            📋 介護DX カカナイ
+        </h1>
+    </div>
+    """, unsafe_allow_html=True)
 
 # サイドバー設定
 with st.sidebar:
@@ -1139,30 +1157,32 @@ with st.sidebar:
         )
         
         if enable_file_backup:
-            # シートタイプ別のフォルダ設定
-            if sheet_type == "運営会議録":
+            # シートタイプ別のフォルダ設定（アセスメントシートは対象外）
+            if sheet_type == "アセスメントシート":
+                st.info("ℹ️ アセスメントシートのファイル保存は現在無効です")
+                st.session_state.enable_file_backup = False
+                st.session_state.file_backup_folder_id = None
+            elif sheet_type == "運営会議録":
                 default_folder = get_backup_folder("MANAGEMENT_MEETING_BACKUP_FOLDER_ID")
                 folder_label = "運営会議用フォルダID"
             elif sheet_type == "サービス担当者会議議事録":
                 default_folder = get_backup_folder("SERVICE_MEETING_BACKUP_FOLDER_ID")
                 folder_label = "サービス担当者会議用フォルダID"
-            else:
-                default_folder = get_backup_folder("ASSESSMENT_BACKUP_FOLDER_ID")
-                folder_label = "アセスメント用フォルダID"
             
-            file_backup_folder_id = st.text_input(
-                folder_label,
-                value=default_folder,
-                key="file_backup_folder_id",
-                help="アップロードファイルの保存先Google DriveフォルダIDを指定"
-            )
-            # セッションステートに保存
-            if file_backup_folder_id:
-                st.session_state.file_backup_folder_id = file_backup_folder_id
-                st.session_state.enable_file_backup = True
-            else:
-                st.warning("フォルダIDを入力してください")
-                st.session_state.enable_file_backup = False
+            if sheet_type != "アセスメントシート":
+                file_backup_folder_id = st.text_input(
+                    folder_label,
+                    value=default_folder,
+                    key="file_backup_folder_id",
+                    help="アップロードファイルの保存先Google DriveフォルダIDを指定"
+                )
+                # セッションステートに保存
+                if file_backup_folder_id:
+                    st.session_state.file_backup_folder_id = file_backup_folder_id
+                    st.session_state.enable_file_backup = True
+                else:
+                    st.warning("フォルダIDを入力してください")
+                    st.session_state.enable_file_backup = False
         else:
             st.session_state.enable_file_backup = False
             st.session_state.file_backup_folder_id = None
