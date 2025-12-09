@@ -1158,6 +1158,9 @@ with st.sidebar:
         
         if enable_file_backup:
             # シートタイプ別のフォルダ設定（アセスメントシートは対象外）
+            default_folder = ""
+            folder_label = "ファイル保存先フォルダID"
+            
             if sheet_type == "アセスメントシート":
                 st.info("ℹ️ アセスメントシートのファイル保存は現在無効です")
                 st.session_state.enable_file_backup = False
