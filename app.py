@@ -1176,7 +1176,7 @@ with st.sidebar:
                 file_backup_folder_id = st.text_input(
                     folder_label,
                     value=default_folder,
-                    key="file_backup_folder_id",
+                    key="file_backup_folder_id_input",
                     help="アップロードファイルの保存先Google DriveフォルダIDを指定"
                 )
                 
