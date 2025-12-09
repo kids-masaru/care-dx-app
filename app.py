@@ -395,25 +395,53 @@ def extract_from_pdf(model, pdf_files, mapping_dict):
             # プロンプト構築
             prompt_parts = [prompt_content] + uploaded_parts
             
-            # Gemini実行
+            # Gemini実行（リトライ機能付き）
+            max_retries = 3
+            retry_count = 0
+            response = None
+            section_data = None
+            
             try:
-                # generate_with_retryを使用
-                response = generate_with_retry(model, prompt_parts)
+                while retry_count < max_retries:
+                    try:
+                        # generate_with_retryを使用
+                        response = generate_with_retry(model, prompt_parts)
+                        
+                        # ブロック検知
+                        if not response.candidates:
+                            retry_count += 1
+                            reason = str(response.prompt_feedback.block_reason)
+                            if reason == "2" or "OTHER" in reason:
+                                reason_msg = "AIの判断（その他）"
+                            else:
+                                reason_msg = reason
+                            
+                            if retry_count < max_retries:
+                                st.warning(f"⚠️ {section_name} がブロックされました ({reason_msg})。リトライ {retry_count}/{max_retries}...")
+                                time.sleep(2)  # 少し待機
+                                continue
+                            else:
+                                st.error(f"❌ {section_name} は{max_retries}回試行しましたが、AIフィルターによりブロックされ続けました。この項目は処理できません。")
+                                print(f"Blocked after {max_retries} retries: {response.prompt_feedback}")
+                                # リトライ失敗時はエラーとして扱う
+                                raise Exception(f"{section_name} blocked after {max_retries} retries")
+                        
+                        # 成功した場合はループを抜ける
+                        break
+                        
+                    except Exception as e:
+                        if "blocked after" in str(e):
+                            # ブロックエラーは再スロー
+                            raise
+                        retry_count += 1
+                        if retry_count < max_retries:
+                            st.warning(f"⚠️ {section_name} の処理中にエラー: {str(e)}。リトライ {retry_count}/{max_retries}...")
+                            time.sleep(2)
+                            continue
+                        else:
+                            raise
                 
-                # ブロック検知
-                if not response.candidates:
-                    reason = str(response.prompt_feedback.block_reason)
-                    if reason == "2" or "OTHER" in reason:
-                        reason_msg = "AIの判断（その他）"
-                    else:
-                        reason_msg = reason
-                    st.info(f"ℹ️ {section_name} はAIフィルターによりスキップされました。空欄として処理を続行します。")
-                    print(f"Blocked (continuing with empty data): {response.prompt_feedback}")
-                    # 空のデータで続行
-                    section_data = {}
-                    full_extracted_data.update(section_data)
-                    continue
-                    
+                # ループ成功後の処理
                 result_text = response.text
                 
                 # JSONパース処理
@@ -767,6 +795,27 @@ def upload_to_google_drive(uploaded_file, folder_id, service_account_info):
             'parents': [folder_id]
         }
         
+        # フォルダの存在確認
+        try:
+            folder = drive_service.files().get(
+                fileId=folder_id,
+                fields='id, name, mimeType'
+            ).execute()
+            
+            # フォルダかどうか確認
+            if folder.get('mimeType') != 'application/vnd.google-apps.folder':
+                st.error(f"❌ 指定されたID ({folder_id}) はフォルダではありません。")
+                return False, None
+                
+            st.info(f"📁 保存先フォルダ: {folder.get('name')}")
+            
+        except Exception as folder_error:
+            st.error(f"❌ フォルダID ({folder_id}) が見つかりません。\n"
+                    f"エラー: {str(folder_error)}\n"
+                    f"フォルダの共有設定を確認してください。\n"
+                    f"サービスアカウント: assessmentsheetcreate@assessmentsheetcreate.iam.gserviceaccount.com")
+            return False, None
+        
         # ファイルデータを読み込み
         uploaded_file.seek(0)
         file_content = uploaded_file.read()
@@ -788,7 +837,7 @@ def upload_to_google_drive(uploaded_file, folder_id, service_account_info):
         return True, file.get('webViewLink', '')
         
     except Exception as e:
-        st.warning(f"ファイル保存エラー: {e}")
+        st.error(f"❌ ファイル保存エラー: {e}")
         return False, None
 
 def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, destination_folder_id, mode, sheet_name):
