@@ -1091,10 +1091,8 @@ with st.sidebar:
         
         # テンプレート保護機能
         st.markdown("**出力設定**")
-        # 運営会議とサービス担当者会議はGAS連携のためデフォルトOFF
+        # 全シートタイプでデフォルトON
         default_protection = True
-        if sheet_type in ["運営会議録", "サービス担当者会議議事録"]:
-            default_protection = False
             
         enable_template_protection = st.checkbox(
             "テンプレート保護を有効化 (新規ファイル作成)",
