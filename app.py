@@ -14,10 +14,12 @@ import datetime
 from dotenv import load_dotenv
 from typing import Dict, List
 
-# Google AI & Sheets
+# Google AI & Sheets & Drive
 import google.generativeai as genai
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaIoBaseUpload
 
 # カスタムモジュール
 from mapping_parser import parse_mapping, generate_extraction_schemas, generate_json_schema
@@ -735,6 +737,57 @@ def copy_spreadsheet(client, template_id: str, new_name: str, folder_id: str = N
         st.error(f"スプレッドシート作成エラー: {str(e)}")
         return None, None
 
+def upload_to_google_drive(uploaded_file, folder_id, service_account_info):
+    """Upload file to Google Drive folder"""
+    try:
+        # 認証
+        from google.oauth2 import service_account
+        
+        SCOPES = ['https://www.googleapis.com/auth/drive.file']
+        credentials = service_account.Credentials.from_service_account_info(
+            service_account_info, scopes=SCOPES
+        )
+        
+        drive_service = build('drive', 'v3', credentials=credentials)
+        
+        # ファイル名の生成（日時_元ファイル名）
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        original_name = uploaded_file.name
+        new_filename = f"{timestamp}_{original_name}"
+        
+        # MIMEタイプの判定
+        mime_type = uploaded_file.type or "application/octet-stream"
+        
+        # ファイルメタデータ
+        file_metadata = {
+            'name': new_filename,
+            'parents': [folder_id]
+        }
+        
+        # ファイルデータを読み込み
+        uploaded_file.seek(0)
+        file_content = uploaded_file.read()
+        uploaded_file.seek(0)  # ポインタを戻す
+        
+        # アップロード
+        media = MediaIoBaseUpload(
+            io.BytesIO(file_content),
+            mimetype=mime_type,
+            resumable=True
+        )
+        
+        file = drive_service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields='id, webViewLink'
+        ).execute()
+        
+        return True, file.get('webViewLink', '')
+        
+    except Exception as e:
+        st.warning(f"ファイル保存エラー: {e}")
+        return False, None
+
 def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, destination_folder_id, mode, sheet_name):
     """スプレッドシートへの書き込みロジックを実行"""
     # service_account.jsonのパスを決定
@@ -1059,6 +1112,35 @@ with st.sidebar:
         
         st.markdown("---")
         
+        # ファイルバックアップ設定
+        st.markdown("**📁 アップロードファイル保存**")
+        enable_file_backup = st.checkbox(
+            "アップロードファイルをGoogle Driveに保存",
+            value=False,
+            help="有効にすると、PDF/音声ファイルを指定フォルダに自動保存します"
+        )
+        
+        file_backup_folder_id = None
+        if enable_file_backup:
+            file_backup_folder_id = st.text_input(
+                "ファイル保存先フォルダID",
+                value=os.getenv("FILE_BACKUP_FOLDER_ID", ""),
+                key="file_backup_folder_id",
+                help="アップロードファイルの保存先Google DriveフォルダIDを指定"
+            )
+            # セッションステートに保存
+            if file_backup_folder_id:
+                st.session_state.file_backup_folder_id = file_backup_folder_id
+                st.session_state.enable_file_backup = True
+            else:
+                st.warning("フォルダIDを入力してください")
+                st.session_state.enable_file_backup = False
+        else:
+            st.session_state.enable_file_backup = False
+            st.session_state.file_backup_folder_id = None
+        
+        st.markdown("---")
+        
         # mapping.txt管理
         st.markdown("**mapping.txt（アセスメントシート用）**")
         if MAPPING_FILE_PATH.exists():
@@ -1260,6 +1342,31 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                 progress_bar = st.progress(0)
                 status_text = st.empty()
                 
+                # Google Driveへのファイル保存（PDFモード）
+                if st.session_state.get('enable_file_backup') and st.session_state.get('file_backup_folder_id'):
+                    status_text.text("💾 ファイルをGoogle Driveに保存中...")
+                    
+                    # service_account情報を取得
+                    sa_info = None
+                    try:
+                        if "gcp_service_account" in st.secrets:
+                            sa_info = dict(st.secrets["gcp_service_account"])
+                        elif SERVICE_ACCOUNT_PATH.exists():
+                            with open(SERVICE_ACCOUNT_PATH, 'r') as f:
+                                sa_info = json.load(f)
+                    except:
+                        pass
+                    
+                    if sa_info:
+                        for pdf_file in uploaded_files:
+                            backup_success, _ = upload_to_google_drive(
+                                pdf_file,
+                                st.session_state.file_backup_folder_id,
+                                sa_info
+                            )
+                            if backup_success:
+                                st.info(f"📁 {pdf_file.name} を保存しました")
+                
                 # Step 1: PDFから情報抽出（ユーザープロンプト準拠）
                 status_text.text("1/3: PDFから情報を抽出しています...（ユーザー指定プロンプト）")
                 # extract_from_pdfはユーザープロンプトを使用するためmapping_dict引数は不要だが、
@@ -1315,6 +1422,31 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                         io.BytesIO(file_data),
                         mime_type=uploaded_files.type
                     )
+                    
+                    # Google Driveへのファイル保存
+                    if st.session_state.get('enable_file_backup') and st.session_state.get('file_backup_folder_id'):
+                        status_text.text("💾 ファイルをGoogle Driveに保存中...")
+                        uploaded_files.seek(0)  # ポインタをリセット
+                        
+                        # service_account情報を取得
+                        sa_info = None
+                        try:
+                            if "gcp_service_account" in st.secrets:
+                                sa_info = dict(st.secrets["gcp_service_account"])
+                            elif SERVICE_ACCOUNT_PATH.exists():
+                                with open(SERVICE_ACCOUNT_PATH, 'r') as f:
+                                    sa_info = json.load(f)
+                        except:
+                            pass
+                        
+                        if sa_info:
+                            backup_success, backup_url = upload_to_google_drive(
+                                uploaded_files,
+                                st.session_state.file_backup_folder_id,
+                                sa_info
+                            )
+                            if backup_success:
+                                st.info(f"📁 ファイルを保存しました")
 
                     # 処理待ち
                     while audio_file.state.name == "PROCESSING":
