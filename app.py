@@ -1179,6 +1179,11 @@ with st.sidebar:
                     key="file_backup_folder_id",
                     help="アップロードファイルの保存先Google DriveフォルダIDを指定"
                 )
+                
+                # デバッグ情報（設定確認用）
+                if default_folder:
+                    st.caption(f"✓ Secretsから自動読み込み済み")
+                
                 # セッションステートに保存
                 if file_backup_folder_id:
                     st.session_state.file_backup_folder_id = file_backup_folder_id
