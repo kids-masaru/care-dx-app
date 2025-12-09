@@ -743,6 +743,7 @@ def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, 
     # ただし、運営会議録の場合はGAS側で新規作成するため、アプリ側での新規作成はスキップする（矛盾回避）
     if enable_template_protection and sheet_type != "運営会議録":
         with st.spinner("📋 スプレッドシートをコピー中..."):
+            import datetime
             year_month = datetime.datetime.now().strftime("%Y%m") # 日付は入れないが、一応ユニークに
             
             # アセスメントシートの場合は利用者名を入れる
@@ -756,7 +757,6 @@ def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, 
                  if not user_name: user_name = "利用者未定"
                  user_name_prefix = f"{user_name}_"
             
-            import datetime
             date_str = datetime.datetime.now().strftime("%Y%m%d")
             # 新規ファイル名の生成
             new_filename = f"{user_name_prefix}{date_str}_{sheet_type}"
