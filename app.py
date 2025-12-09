@@ -505,7 +505,7 @@ JSON出力例:
         return None
 
 def generate_management_meeting_summary(model, transcript_or_audio):
-    """運営会議用の要約生成 (JSON形式で出力)"""
+    """Generate summary for management meeting (output as JSON)"""
     # 入力が文字列かチェック
     is_text_input = isinstance(transcript_or_audio, str)
     
@@ -568,8 +568,6 @@ def generate_management_meeting_summary(model, transcript_or_audio):
 }
 
 **重要**: 必ず有効なJSONのみを出力してください。Markdown記法は不要です。
-"""
-    try:
 """
     try:
         response = generate_with_retry(model, [transcript_or_audio, prompt])
@@ -655,7 +653,7 @@ def write_management_meeting_to_row(client, spreadsheet_id, data, date_str, time
         return False, None, 0
 
 def write_service_meeting_to_row(client, sheet_id, data_dict, sheet_name=None):
-    """サービス担当者会議のデータを空き行に追記（列名マッチング）"""
+    """Append row for service provider meeting (header matching)"""
     try:
         sh = client.open_by_key(sheet_id)
         ws = sh.worksheet(sheet_name) if sheet_name else sh.sheet1
@@ -687,7 +685,7 @@ def write_service_meeting_to_row(client, sheet_id, data_dict, sheet_name=None):
         return False, None, 0
 
 def copy_spreadsheet(client, template_id: str, new_name: str, folder_id: str = None):
-    """テンプレートスプレッドシートをコピーして新規作成"""
+    """Copy template spreadsheet and create new"""
     try:
         import datetime
         
