@@ -407,8 +407,11 @@ def extract_from_pdf(model, pdf_files, mapping_dict):
                         reason_msg = "AIの判断（その他）"
                     else:
                         reason_msg = reason
-                    st.warning(f"⚠️ {section_name} がブロックされました ({reason_msg})。この部分はスキップされます。")
-                    print(f"Blocked: {response.prompt_feedback}")
+                    st.info(f"ℹ️ {section_name} はAIフィルターによりスキップされました。空欄として処理を続行します。")
+                    print(f"Blocked (continuing with empty data): {response.prompt_feedback}")
+                    # 空のデータで続行
+                    section_data = {}
+                    full_extracted_data.update(section_data)
                     continue
                     
                 result_text = response.text
