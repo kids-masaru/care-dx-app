@@ -1130,6 +1130,10 @@ else:
         with col1:
             session_date_obj = st.date_input("開催日", datetime.date.today())
             session_date_str = session_date_obj.strftime('%Y年%m月%d日')
+            
+            # 開催日の下に参加者を入れる
+            participants = st.text_input("参加者", placeholder="例: 井﨑、武島、〇〇")
+            
         with col2:
             session_place = st.text_input("開催場所", value="会議室")
             st.markdown("**開催時間**")
@@ -1141,7 +1145,6 @@ else:
                 end_time = st.selectbox("終了", time_options, index=6, key="op_end")   # 11:00
             session_time_str = f"{start_time}~{end_time}"
             
-        participants = st.text_input("参加者", placeholder="例: 井﨑、武島、〇〇")
         
         # ヘッダー作成
         header_text = (
@@ -1293,7 +1296,33 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                     )
                     
                     response = model.generate_content([prompt, audio_file])
-                    transcript_text = response.text
+                    
+                    # レスポンス検証（Partエラー回避）
+                    if not response.candidates:
+                         # 候補がない場合（ブロックなど）
+                         st.error(f"AIからの応答がありませんでした (Finish Reason: {response.prompt_feedback.block_reason})")
+                         raise Exception("No candidates returned")
+                    
+                    if not response.parts:
+                         # パーツがない場合（トークンリミット等で空になった可能性）
+                         try:
+                             # 強制的にtextアクセスしてエラーになるか確認、またはcandidates[0]から取得試行
+                             if response.candidates[0].finish_reason == 2: # MAX_TOKENS
+                                 st.warning("⚠️ 音声が長すぎるため、処理が途中で中断された可能性があります (Max Tokens Reached)。途中までの結果を使用します。")
+                                 # textが空でもcandidatesの中にデータがあるか確認
+                             pass
+                         except:
+                             pass
+                    
+                    try:
+                        transcript_text = response.text
+                    except ValueError:
+                        # "The response.text quick accessor requires the response to contain a valid Part" 対策
+                        if response.candidates and response.candidates[0].content.parts:
+                            transcript_text = response.candidates[0].content.parts[0].text
+                        else:
+                            st.warning("文字起こしデータが空、または取得できませんでした。")
+                            transcript_text = "（文字起こし失敗）"
                     
                 # モードに応じた処理
                     if sheet_type == "サービス担当者会議議事録":
