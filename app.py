@@ -504,11 +504,16 @@ JSON出力例:
         st.error(f"要約生成エラー: {e}")
         return None
 
-def generate_management_meeting_summary(model, transcript):
+def generate_management_meeting_summary(model, transcript_or_audio):
     """運営会議用の要約生成 (JSON形式で出力)"""
-    prompt = """
+    # 入力が文字列かチェック
+    is_text_input = isinstance(transcript_or_audio, str)
+    
+    input_content = "入力された「会議の文字起こしテキスト」" if is_text_input else "入力された「会議の音声データ」"
+    
+    prompt = f"""
 あなたは、医療・福祉分野のプロの記録担当者です。
-入力された「会議の文字起こしテキスト」を分析し、以下の情報を抽出・整理して、**JSON形式**で出力してください。
+{input_content}を分析し、以下の情報を抽出・整理して、**JSON形式**で出力してください。
 
 ## 出力するJSONのキーと作成ルール
 
@@ -565,7 +570,9 @@ def generate_management_meeting_summary(model, transcript):
 **重要**: 必ず有効なJSONのみを出力してください。Markdown記法は不要です。
 """
     try:
-        response = generate_with_retry(model, [transcript, prompt])
+"""
+    try:
+        response = generate_with_retry(model, [transcript_or_audio, prompt])
         text = response.text.strip()
         if text.startswith("```json"):
             text = text.split("```json")[1].split("```")[0].strip()
@@ -1354,7 +1361,23 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                             "participants": participants
                         }
                         
-                        summary_json = generate_management_meeting_summary(model, transcript_text)
+                        # 以前は文字起こしテキスト(transcript_text)を使っていたが、
+                        # 音声が長いとMax Tokensエラーでテキストが途中切れするため、
+                        # 音声ファイル(audio_file)を直接渡して要約させる（音声ファイル自体のコンテキスト長は大きいため）
+                        # ただし、transcript_textが正常に取れているならそれを使う（コスト/速度的に）
+                        
+                        use_audio_directly = False
+                        if "（文字起こし失敗）" in transcript_text or len(transcript_text) < 100:
+                             use_audio_directly = True
+                        
+                        # ユーザー入力またはエラー状況から判断
+                        # 今回は、transcript_textが不完全な可能性があるため、音声ファイルがあるならそちらを使うのが確実
+                        summary_source = transcript_text
+                        if audio_file and use_audio_directly:
+                             status_text.text("🤖 音声データから直接要約を作成中... (Summarizing from Audio...)")
+                             summary_source = audio_file
+                        
+                        summary_json = generate_management_meeting_summary(model, summary_source)
                         
                         if summary_json:
                             # UI入力値を上書きまたはマージする (ユーザーが正しい値を入力している前提)
