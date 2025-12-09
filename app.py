@@ -1353,6 +1353,21 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                             st.session_state.extracted_data = summary_data
                             # 全文も一応保存しておく（デバッグ用）
                             st.session_state.extracted_data["_会議録全文_RAW"] = transcript_text
+                            
+                            # UI入力値でAI抽出結果を上書き/補完
+                            if session_date_str:
+                                st.session_state.extracted_data["開催日"] = session_date_str
+                            if session_time_str:
+                                st.session_state.extracted_data["開催時間"] = session_time_str
+                            if session_place:
+                                st.session_state.extracted_data["開催場所"] = session_place
+                            if in_charge_name:
+                                st.session_state.extracted_data["担当者名"] = in_charge_name
+                            if user_name_input:
+                                st.session_state.extracted_data["利用者名"] = user_name_input
+                            if session_count:
+                                st.session_state.extracted_data["開催回数"] = session_count
+                            
                             st.success("✅ 要約データの抽出に成功しました")
                         else:
                             st.error("要約データの生成に失敗しました")
