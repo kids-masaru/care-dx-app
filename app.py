@@ -1091,9 +1091,9 @@ with st.sidebar:
         
         # テンプレート保護機能
         st.markdown("**出力設定**")
-        # 運営会議の場合はデフォルトOFF（GAS連携のため）
+        # 運営会議とサービス担当者会議はGAS連携のためデフォルトOFF
         default_protection = True
-        if sheet_type == "運営会議録":
+        if sheet_type in ["運営会議録", "サービス担当者会議議事録"]:
             default_protection = False
             
         enable_template_protection = st.checkbox(
@@ -1184,9 +1184,10 @@ with st.sidebar:
                 if default_folder:
                     st.caption(f"✓ Secretsから自動読み込み済み")
                 
-                # セッションステートに保存
-                if file_backup_folder_id:
-                    st.session_state.file_backup_folder_id = file_backup_folder_id
+                # セッションステートに保存（空の場合はdefault_folderを使用）
+                final_folder_id = file_backup_folder_id or default_folder
+                if final_folder_id:
+                    st.session_state.file_backup_folder_id = final_folder_id
                     st.session_state.enable_file_backup = True
                 else:
                     st.warning("フォルダIDを入力してください")
