@@ -1225,15 +1225,18 @@ with st.sidebar:
             elif sheet_type == "運営会議録":
                 default_folder = get_backup_folder("MANAGEMENT_MEETING_BACKUP_FOLDER_ID")
                 folder_label = "運営会議用フォルダID"
+                input_key = "management_backup_folder_id"
             elif sheet_type == "サービス担当者会議議事録":
                 default_folder = get_backup_folder("SERVICE_MEETING_BACKUP_FOLDER_ID")
                 folder_label = "サービス担当者会議用フォルダID"
+                input_key = "service_backup_folder_id"
             
             if sheet_type != "アセスメントシート":
+                # シートタイプ別のキーを使用して、切り替え時に正しいフォルダIDが表示されるようにする
                 file_backup_folder_id = st.text_input(
                     folder_label,
                     value=default_folder,
-                    key="file_backup_folder_id_input",
+                    key=input_key,
                     help="アップロードファイルの保存先Google DriveフォルダIDを指定"
                 )
                 
@@ -1241,8 +1244,9 @@ with st.sidebar:
                 if default_folder:
                     st.caption(f"✓ Secretsから自動読み込み済み")
                 
-                # セッションステートに保存（空の場合はdefault_folderを使用）
-                final_folder_id = file_backup_folder_id or default_folder
+                # セッションステートに保存（常にdefault_folderを優先）
+                # ユーザー入力がある場合はそれを使い、なければdefault_folderを使う
+                final_folder_id = file_backup_folder_id if file_backup_folder_id else default_folder
                 if final_folder_id:
                     st.session_state.file_backup_folder_id = final_folder_id
                     st.session_state.enable_file_backup = True
