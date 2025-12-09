@@ -1114,9 +1114,21 @@ with st.sidebar:
         
         # ファイルバックアップ設定
         st.markdown("**📁 アップロードファイル保存**")
+        
+        # デフォルト値をSecrets/envから取得
+        default_backup_folder = os.getenv("FILE_BACKUP_FOLDER_ID", "")
+        default_enable_backup = os.getenv("ENABLE_FILE_BACKUP", "").lower() == "true"
+        try:
+            if not default_backup_folder and "FILE_BACKUP_FOLDER_ID" in st.secrets:
+                default_backup_folder = st.secrets["FILE_BACKUP_FOLDER_ID"]
+            if not default_enable_backup and "ENABLE_FILE_BACKUP" in st.secrets:
+                default_enable_backup = str(st.secrets["ENABLE_FILE_BACKUP"]).lower() == "true"
+        except:
+            pass
+        
         enable_file_backup = st.checkbox(
             "アップロードファイルをGoogle Driveに保存",
-            value=False,
+            value=default_enable_backup,
             help="有効にすると、PDF/音声ファイルを指定フォルダに自動保存します"
         )
         
@@ -1124,7 +1136,7 @@ with st.sidebar:
         if enable_file_backup:
             file_backup_folder_id = st.text_input(
                 "ファイル保存先フォルダID",
-                value=os.getenv("FILE_BACKUP_FOLDER_ID", ""),
+                value=default_backup_folder,
                 key="file_backup_folder_id",
                 help="アップロードファイルの保存先Google DriveフォルダIDを指定"
             )
