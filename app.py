@@ -795,11 +795,12 @@ def upload_to_google_drive(uploaded_file, folder_id, service_account_info):
             'parents': [folder_id]
         }
         
-        # フォルダの存在確認
+        # フォルダの存在確認（共有ドライブ対応）
         try:
             folder = drive_service.files().get(
                 fileId=folder_id,
-                fields='id, name, mimeType'
+                fields='id, name, mimeType',
+                supportsAllDrives=True
             ).execute()
             
             # フォルダかどうか確認
@@ -831,7 +832,8 @@ def upload_to_google_drive(uploaded_file, folder_id, service_account_info):
         file = drive_service.files().create(
             body=file_metadata,
             media_body=media,
-            fields='id, webViewLink'
+            fields='id, webViewLink',
+            supportsAllDrives=True
         ).execute()
         
         return True, file.get('webViewLink', '')
