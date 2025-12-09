@@ -586,7 +586,7 @@ def generate_management_meeting_summary(model, transcript_or_audio):
 
 
 def write_management_meeting_to_row(client, spreadsheet_id, data, date_str, time_str, place, participants, sheet_name=None):
-    """運営会議録を行追記（ヘッダー自動検知）"""
+    """Append row for management meeting (auto header detection)"""
     try:
         sh = client.open_by_key(spreadsheet_id)
         try:
