@@ -1115,12 +1115,18 @@ with st.sidebar:
         # ファイルバックアップ設定
         st.markdown("**📁 アップロードファイル保存**")
         
-        # デフォルト値をSecrets/envから取得
-        default_backup_folder = os.getenv("FILE_BACKUP_FOLDER_ID", "")
+        # デフォルト値をSecrets/envから取得（シートタイプ別）
+        def get_backup_folder(key):
+            val = os.getenv(key, "")
+            try:
+                if not val and key in st.secrets:
+                    val = st.secrets[key]
+            except:
+                pass
+            return val
+        
         default_enable_backup = os.getenv("ENABLE_FILE_BACKUP", "").lower() == "true"
         try:
-            if not default_backup_folder and "FILE_BACKUP_FOLDER_ID" in st.secrets:
-                default_backup_folder = st.secrets["FILE_BACKUP_FOLDER_ID"]
             if not default_enable_backup and "ENABLE_FILE_BACKUP" in st.secrets:
                 default_enable_backup = str(st.secrets["ENABLE_FILE_BACKUP"]).lower() == "true"
         except:
@@ -1132,11 +1138,21 @@ with st.sidebar:
             help="有効にすると、PDF/音声ファイルを指定フォルダに自動保存します"
         )
         
-        file_backup_folder_id = None
         if enable_file_backup:
+            # シートタイプ別のフォルダ設定
+            if sheet_type == "運営会議録":
+                default_folder = get_backup_folder("MANAGEMENT_MEETING_BACKUP_FOLDER_ID")
+                folder_label = "運営会議用フォルダID"
+            elif sheet_type == "サービス担当者会議議事録":
+                default_folder = get_backup_folder("SERVICE_MEETING_BACKUP_FOLDER_ID")
+                folder_label = "サービス担当者会議用フォルダID"
+            else:
+                default_folder = get_backup_folder("ASSESSMENT_BACKUP_FOLDER_ID")
+                folder_label = "アセスメント用フォルダID"
+            
             file_backup_folder_id = st.text_input(
-                "ファイル保存先フォルダID",
-                value=default_backup_folder,
+                folder_label,
+                value=default_folder,
                 key="file_backup_folder_id",
                 help="アップロードファイルの保存先Google DriveフォルダIDを指定"
             )
