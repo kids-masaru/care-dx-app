@@ -1103,17 +1103,22 @@ with st.sidebar:
         # コピー先フォルダ指定（保護有効時のみ表示）
         destination_folder_id = None
         if enable_template_protection:
-            # デフォルトのフォルダID
-            DEFAULT_FOLDER_ID = "1T3BttYwcn59dKW_0kXlnRUX9CMIXv9Le"
+            # デフォルトのフォルダIDをSecrets/envから取得
+            default_dest_folder = os.getenv("ASSESSMENT_FOLDER_ID", "1Gt80-DbhrM1dWlLOA8vu7722f3DGqo8y")
+            try:
+                if "ASSESSMENT_FOLDER_ID" in st.secrets:
+                    default_dest_folder = st.secrets["ASSESSMENT_FOLDER_ID"]
+            except:
+                pass
             
             # セッションステート初期化
             if "destination_folder_id" not in st.session_state:
-                st.session_state.destination_folder_id = DEFAULT_FOLDER_ID
+                st.session_state.destination_folder_id = default_dest_folder
             
             destination_folder_id = st.text_input(
                 "保存先フォルダID (Google Drive)",
                 value=st.session_state.destination_folder_id,
-                key="input_destination_folder_id",  # unique key for input
+                key="input_destination_folder_id",
                 help="新規作成するシートの保存先フォルダIDを指定します"
             )
             
