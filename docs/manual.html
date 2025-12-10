@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>介護DX カカナイ 操作マニュアル</title>
+    <style>
+        :root {
+            --primary: #0ea5e9;
+            --primary-dark: #0284c7;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.8;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .toc {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .toc h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .toc ul {
+            list-style: none;
+        }
+
+        .toc li {
+            margin: 10px 0;
+        }
+
+        .toc a {
+            color: var(--text);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .toc a:hover {
+            background: var(--bg);
+        }
+
+        .toc .icon {
+            font-size: 1.5rem;
+        }
+
+        section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        section h2 {
+            color: var(--primary);
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        section h3 {
+            color: var(--text);
+            font-size: 1.3rem;
+            margin: 30px 0 15px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-card {
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .feature-card .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .feature-card h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .steps {
+            counter-reset: step;
+        }
+
+        .step {
+            display: flex;
+            gap: 20px;
+            margin: 25px 0;
+            padding: 20px;
+            background: var(--bg);
+            border-radius: 10px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            background: var(--primary);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .step-content h4 {
+            margin-bottom: 10px;
+            color: var(--text);
+        }
+
+        .step-content p {
+            color: var(--text-muted);
+        }
+
+        .screenshot-placeholder {
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            border: 2px dashed #818cf8;
+            border-radius: 10px;
+            padding: 60px 40px;
+            text-align: center;
+            margin: 20px 0;
+            color: #4f46e5;
+        }
+
+        .screenshot-placeholder .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+
+        .screenshot-placeholder p {
+            font-size: 0.9rem;
+        }
+
+        .tip {
+            background: #ecfdf5;
+            border-left: 4px solid var(--success);
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .tip::before {
+            content: "💡 ";
+        }
+
+        .warning {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning);
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+
+        .warning::before {
+            content: "⚠️ ";
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: var(--bg);
+            font-weight: 600;
+        }
+
+        .format-box {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        .faq-item {
+            margin: 20px 0;
+            padding: 20px;
+            background: var(--bg);
+            border-radius: 10px;
+        }
+
+        .faq-item h4 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+        }
+
+        @media print {
+            header {
+                background: var(--primary) !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            section {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>📋 介護DX カカナイ</h1>
+        <p>操作マニュアル v1.0</p>
+    </header>
+
+    <div class="container">
+        <nav class="toc">
+            <h2>📑 目次</h2>
+            <ul>
+                <li><a href="#intro"><span class="icon">📖</span> はじめに</a></li>
+                <li><a href="#management"><span class="icon">🎙️</span> 運営会議録の作成</a></li>
+                <li><a href="#service"><span class="icon">🎙️</span> サービス担当者会議議事録の作成</a></li>
+                <li><a href="#assessment"><span class="icon">📄</span> アセスメントシートの作成</a></li>
+                <li><a href="#faq"><span class="icon">❓</span> よくある質問（FAQ）</a></li>
+            </ul>
+        </nav>
+
+        <section id="intro">
+            <h2>📖 はじめに</h2>
+
+            <h3>アプリの概要</h3>
+            <p>「介護DX カカナイ」は、介護業務のドキュメント作成を自動化するWebアプリケーションです。音声データやPDF書類をアップロードするだけで、AIが自動的に情報を抽出し、必要な書類を作成します。</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="icon">🎙️</div>
+                    <h4>運営会議録</h4>
+                    <p>音声データから議事録を自動作成。Google Driveに自動保存。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🎙️</div>
+                    <h4>サービス担当者会議</h4>
+                    <p>音声データから詳細な議事録を作成。各事業所の役割分担も抽出。</p>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📄</div>
+                    <h4>アセスメントシート</h4>
+                    <p>PDFから情報を抽出しスプレッドシートに自動転記。</p>
+                </div>
+            </div>
+
+            <h3>必要な準備</h3>
+            <table>
+                <tr>
+                    <th>項目</th>
+                    <th>説明</th>
+                </tr>
+                <tr>
+                    <td>音声データ</td>
+                    <td>スマートフォンやICレコーダーで録音したファイル（MP3, M4A, WAV形式）</td>
+                </tr>
+                <tr>
+                    <td>PDF書類</td>
+                    <td>介護保険証、主治医意見書などのスキャンデータ</td>
+                </tr>
+                <tr>
+                    <td>Googleアカウント</td>
+                    <td>スプレッドシートへの書き込みに使用</td>
+                </tr>
+            </table>
+        </section>
+
+        <section id="management">
+            <h2>🎙️ 運営会議録の作成</h2>
+
+            <div class="screenshot-placeholder">
+                <div class="icon">🖥️</div>
+                <p><strong>運営会議録 入力画面</strong><br>サイドバーで「運営会議録」を選択した状態</p>
+            </div>
+
+            <h3>操作手順</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>シートタイプを選択</h4>
+                        <p>サイドバーの「シートタイプ」ドロップダウンから<strong>「運営会議録」</strong>を選択します。</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>会議情報を入力</h4>
+                        <p>以下の情報を入力します：</p>
+                        <ul>
+                            <li><strong>開催日</strong>：カレンダーから選択</li>
+                            <li><strong>開催場所</strong>：会議室など</li>
+                            <li><strong>開催時間</strong>：開始〜終了時間を選択</li>
+                            <li><strong>参加者</strong>：出席者名をカンマ区切りで入力</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>音声ファイルをアップロード</h4>
+                        <p>「音声ファイルを選択」エリアにファイルをドラッグ＆ドロップ、または「Browse files」ボタンでファイルを選択します。</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>AI抽出を開始</h4>
+                        <p><strong>「🚀 AI抽出開始」</strong>ボタンをクリックします。処理完了まで数分かかる場合があります。</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h4>結果を確認</h4>
+                        <p>抽出された議事録が表示され、自動的にGoogleスプレッドシートに転記されます。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tip">
+                <strong>自動保存機能</strong><br>
+                アップロードした音声ファイルは、指定のGoogle Driveフォルダに自動保存されます。<br>
+                ファイル名：<code>YYYYMMDD_HHMMSS_元のファイル名</code>
+            </div>
+        </section>
+
+        <section id="service">
+            <h2>🎙️ サービス担当者会議議事録の作成</h2>
+
+            <div class="screenshot-placeholder">
+                <div class="icon">🖥️</div>
+                <p><strong>サービス担当者会議 入力画面</strong><br>担当者名、利用者名、開催情報の入力欄</p>
+            </div>
+
+            <h3>操作手順</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>シートタイプを選択</h4>
+                        <p>サイドバーで<strong>「サービス担当者会議議事録」</strong>を選択します。</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>会議情報を入力</h4>
+                        <ul>
+                            <li><strong>担当者名</strong>：ケアマネージャー名</li>
+                            <li><strong>利用者名</strong>：対象者の氏名</li>
+                            <li><strong>開催日</strong>：カレンダーから選択</li>
+                            <li><strong>開催場所</strong>：自宅、事業所など</li>
+                            <li><strong>開催時間</strong>：開始〜終了時間</li>
+                            <li><strong>開催回数</strong>：第1回、第2回など</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>音声ファイルをアップロード</h4>
+                        <p>会議を録音した音声ファイルを選択します。</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>AI抽出を開始</h4>
+                        <p><strong>「🚀 AI抽出開始」</strong>ボタンをクリックします。</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>出力フォーマット</h3>
+            <p>議事録は以下の形式で作成されます：</p>
+
+            <div class="format-box">①【本人及び家族の意向】
+                ・本人⇒「自分でできることは自分でやりたい」
+                ・家族⇒「安全に過ごしてほしい」
+
+                ②【心身・生活状況】
+                ・身体状況⇒...
+                ・精神状況⇒...
+                ・生活状況⇒...
+                ・困りごと・生活ニーズ⇒...
+                ・主治医からの医学的所見⇒...
+
+                ③【会議の結論・ケアプラン詳細】
+                ・主な検討事項と結論：...
+
+                ④【各事業所の役割分担と確認事項】
+                ＊デイサービスA⇒
+                　・提供内容：週2回、入浴・機能訓練
+                　・主な役割と留意点：...
+
+                ⑤【福祉用具・住宅改修等に関する検討事項】
+                ・現状の課題：...
+                ・検討内容と経緯：...
+                ・結論：...</div>
+        </section>
+
+        <section id="assessment">
+            <h2>📄 アセスメントシートの作成</h2>
+
+            <div class="screenshot-placeholder">
+                <div class="icon">🖥️</div>
+                <p><strong>アセスメントシート 入力画面</strong><br>PDFアップロードエリアとスプレッドシートID入力欄</p>
+            </div>
+
+            <h3>操作手順</h3>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>シートタイプを選択</h4>
+                        <p>サイドバーで<strong>「アセスメントシート」</strong>を選択します。</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>入力モードを選択</h4>
+                        <p><strong>「PDFから転記」</strong>を選択します。</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>PDFファイルをアップロード</h4>
+                        <p>介護保険証、主治医意見書などのPDFをアップロードします。複数ファイルを同時にアップロード可能です。</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>スプレッドシートIDを入力</h4>
+                        <p>転記先のGoogleスプレッドシートのIDを入力します。<br>
+                            URLの <code>/d/</code> と <code>/edit</code> の間の文字列がIDです。</p>
+                        <p><small>例：https://docs.google.com/spreadsheets/d/<strong
+                                    style="color: var(--primary);">ここがID</strong>/edit</small></p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h4>AI抽出を開始</h4>
+                        <p><strong>「🚀 AI抽出開始」</strong>ボタンをクリックします。</p>
+                    </div>
+                </div>
+            </div>
+
+            <h3>抽出される情報</h3>
+            <table>
+                <tr>
+                    <th>カテゴリ</th>
+                    <th>項目例</th>
+                </tr>
+                <tr>
+                    <td>利用者基本情報</td>
+                    <td>氏名、生年月日、住所、電話番号</td>
+                </tr>
+                <tr>
+                    <td>介護保険情報</td>
+                    <td>被保険者番号、要介護度、認定有効期間</td>
+                </tr>
+                <tr>
+                    <td>主治医情報</td>
+                    <td>医療機関名、医師名、連絡先</td>
+                </tr>
+                <tr>
+                    <td>既往歴・現病歴</td>
+                    <td>疾病名、治療状況</td>
+                </tr>
+                <tr>
+                    <td>ADL・IADL情報</td>
+                    <td>移動、食事、入浴、排泄等の自立度</td>
+                </tr>
+            </table>
+
+            <div class="warning">
+                PDFの文字が読み取りにくい場合は、スキャン品質を上げて再度お試しください。
+            </div>
+        </section>
+
+        <section id="faq">
+            <h2>❓ よくある質問（FAQ）</h2>
+
+            <div class="faq-item">
+                <h4>Q: 音声ファイルの長さに制限はありますか？</h4>
+                <p>A: 長時間の音声でも処理可能ですが、1時間を超える場合は処理に時間がかかります。</p>
+            </div>
+
+            <div class="faq-item">
+                <h4>Q: 対応している音声形式は？</h4>
+                <p>A: MP3, M4A, WAV形式に対応しています。</p>
+            </div>
+
+            <div class="faq-item">
+                <h4>Q: PDFの文字が読み取れない場合は？</h4>
+                <p>A: スキャン品質が低いとOCR精度が下がります。できるだけ高解像度（300dpi以上）でスキャンしてください。</p>
+            </div>
+
+            <div class="faq-item">
+                <h4>Q: 抽出結果を修正できますか？</h4>
+                <p>A: 転記先のGoogleスプレッドシートで直接編集できます。</p>
+            </div>
+
+            <div class="faq-item">
+                <h4>Q: エラーが発生した場合は？</h4>
+                <p>A: ページをリロードして再度お試しください。それでも解決しない場合は管理者にお問い合わせください。</p>
+            </div>
+
+            <div class="faq-item">
+                <h4>Q: アップロードしたファイルはどこに保存されますか？</h4>
+                <p>A: 運営会議・サービス担当者会議の音声ファイルは、設定で指定したGoogle Driveフォルダに自動保存されます。</p>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>介護DX カカナイ v1.0 | Powered by Google Gemini</p>
+        <p>&copy; 2024 All Rights Reserved</p>
+    </footer>
+</body>
+
+</html>
