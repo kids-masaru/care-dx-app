@@ -22,6 +22,7 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
 # カスタムモジュール
+# ※実行環境に mapping_parser.py が存在することを確認してください
 from mapping_parser import parse_mapping, generate_extraction_schemas, generate_json_schema
 
 # 環境変数の読み込み
@@ -356,26 +357,34 @@ def map_extracted_data_to_schema(model, raw_data, mapping_dict):
     except Exception as e:
         st.error(f"AIマッピングエラー: {str(e)}")
         return None
-        
-    except Exception as e:
-        st.error(f"AIマッピングエラー: {str(e)}")
-        return None
 
 
 def extract_from_pdf(model, pdf_files, mapping_dict):
     """PDFファイルから情報を抽出（分割実行）"""
+    # アップロードしたファイルを追跡するリスト
+    uploaded_parts = []
+    
     try:
         # プロンプト分割リストを取得
         extraction_schemas = generate_extraction_schemas()
         
         # ファイルをアップロード（一度だけ行う）
-        uploaded_parts = []
         for pdf_file in pdf_files:
             file_data = pdf_file.read()
             uploaded_file = genai.upload_file(
                 io.BytesIO(file_data),
                 mime_type=pdf_file.type
             )
+            
+            # Processing待機
+            while uploaded_file.state.name == "PROCESSING":
+                time.sleep(1)
+                uploaded_file = genai.get_file(uploaded_file.name)
+            
+            if uploaded_file.state.name == "FAILED":
+                st.error(f"File upload failed: {pdf_file.name}")
+                continue
+
             uploaded_parts.append(uploaded_file)
             # 全ファイルのポインタを戻す（念のため）
             pdf_file.seek(0)
@@ -488,17 +497,18 @@ def extract_from_pdf(model, pdf_files, mapping_dict):
         st.error(f"データ抽出プロセス全体でエラーが発生: {str(e)}")
         return None
 
-
-    except Exception as e:
-        st.error(f"データ抽出プロセス全体でエラーが発生: {str(e)}")
-        return None
+    finally:
+        # ★【重要】処理が終わったら（成功してもエラーでも）必ずクラウド上のファイルを削除
+        for up_file in uploaded_parts:
+            try:
+                # print(f"Deleting file from Cloud: {up_file.name}")
+                genai.delete_file(up_file.name)
+            except Exception as e:
+                print(f"Error deleting file {up_file.name}: {e}")
 
 
 def extract_from_audio(model, audio_file):
     """音声ファイルから会議録を作成（汎用・運営会議用）"""
-    # ... (Existing logic for Management Meeting) ...
-    # This function is now primarily for Management Meeting or fallback.
-    # Refactoring to allow different logic is handled in the main loop.
     pass
 
 def generate_service_meeting_summary(model, transcript_or_audio):
@@ -829,7 +839,7 @@ def upload_to_google_drive(uploaded_file, folder_id, service_account_info):
         # 認証
         from google.oauth2 import service_account
         
-        SCOPES = ['https://www.googleapis.com/auth/drive']
+        SCOPES = ['[https://www.googleapis.com/auth/drive](https://www.googleapis.com/auth/drive)']
         credentials = service_account.Credentials.from_service_account_info(
             service_account_info, scopes=SCOPES
         )
@@ -1585,6 +1595,7 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                 status_text.text("📂 音声ファイルを処理中...")
                 progress_bar.progress(10)
                 
+                audio_file = None
                 try:
                     # 音声ファイルをアップロード
                     file_data = uploaded_files.read()
@@ -1770,6 +1781,15 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
 
                 except Exception as e:
                     st.error(f"文字起こしエラー: {e}")
+                
+                finally:
+                    # ★【重要】処理が終わったら（成功してもエラーでも）必ずクラウド上の音声ファイルを削除
+                    if audio_file:
+                        try:
+                            # print(f"Deleting audio file from Cloud: {audio_file.name}")
+                            genai.delete_file(audio_file.name)
+                        except Exception as e:
+                            print(f"Error deleting audio file: {e}")
 
 # 抽出結果の表示
 if st.session_state.extracted_data:
