@@ -1,0 +1,7 @@
+[server]
+# アップロードファイルの最大サイズ（MB）
+# デフォルトは200MB、1024MBに変更
+maxUploadSize = 1024
+
+# メッセージサイズの上限（MB）
+maxMessageSize = 1024

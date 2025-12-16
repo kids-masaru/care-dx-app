@@ -24,7 +24,7 @@ wheels/
 *.egg
 
 # Streamlit
-.streamlit/
+.streamlit/secrets.toml
 
 # 認証情報
 service_account.json
