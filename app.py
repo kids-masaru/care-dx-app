@@ -1512,20 +1512,7 @@ requires_mapping = st.session_state.get('sheet_type', 'アセスメントシー�
 
 # ファイルアップロードと入力フォーム
 if mode == "PDFから転記":
-    col_icon, col_text = st.columns([0.03, 0.97])
-    with col_icon:
-        st.image(CONFIG_DIR / "upload_icon.png", width=32)
-    with col_text:
-        st.subheader("ファイルアップロード")
-
-    uploaded_files = st.file_uploader(
-        "PDF/画像ファイルを選択",
-        type=['pdf', 'png', 'jpg', 'jpeg'],
-        accept_multiple_files=True
-    )
-    
-    # アセスメントシート用の手入力フィールド
-    st.markdown("---")
+    # アセスメントシート用の手入力フィールド（先に表示）
     st.markdown("### 📝 基本情報の入力")
     st.caption("以下の項目は手入力でスプレッドシートに直接反映されます")
     
@@ -1606,6 +1593,20 @@ if mode == "PDFから転記":
         "実施場所": assessment_location,
         "実施場所_他": assessment_location_other,
     }
+    
+    # ファイルアップロード（入力の後に表示）
+    st.markdown("---")
+    col_icon, col_text = st.columns([0.03, 0.97])
+    with col_icon:
+        st.image(CONFIG_DIR / "upload_icon.png", width=32)
+    with col_text:
+        st.subheader("ファイルアップロード")
+
+    uploaded_files = st.file_uploader(
+        "PDF/画像ファイルを選択",
+        type=['pdf', 'png', 'jpg', 'jpeg'],
+        accept_multiple_files=True
+    )
 
 
 else:
