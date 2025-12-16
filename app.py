@@ -1052,9 +1052,9 @@ def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, 
                     if manual_inputs.get("アセスメント理由"):
                         manual_updates.append({'range': 'F15', 'values': [[manual_inputs["アセスメント理由"]]]})
                     
-                    # アセスメント理由（その他）→ L15
-                    if manual_inputs.get("アセスメント理由_他"):
-                        manual_updates.append({'range': 'L15', 'values': [[manual_inputs["アセスメント理由_他"]]]})
+                    # アセスメント理由_備考 → L15
+                    if manual_inputs.get("アセスメント理由_備考"):
+                        manual_updates.append({'range': 'L15', 'values': [[manual_inputs["アセスメント理由_備考"]]]})
                     
                     # 実施場所 → X15
                     if manual_inputs.get("実施場所"):
@@ -1569,7 +1569,14 @@ if mode == "PDFから転記":
             key="assess_reason"
         )
         
-        # アセスメント理由が「その他」の場合の入力
+        # アセスメント理由_備考（常に表示）
+        assessment_reason_remark = st.text_input(
+            "アセスメント理由_備考",
+            placeholder="備考があれば入力",
+            key="assess_reason_remark"
+        )
+        
+        # アセスメント理由が「その他」の場合の追加入力（従来通り）
         assessment_reason_other = ""
         if assessment_reason == "その他":
             assessment_reason_other = st.text_input(
@@ -1602,6 +1609,7 @@ if mode == "PDFから転記":
         "受付方法": assessment_reception_method,
         "受付方法_他": assessment_reception_method_other,
         "アセスメント理由": assessment_reason,
+        "アセスメント理由_備考": assessment_reason_remark,
         "アセスメント理由_他": assessment_reason_other,
         "実施場所": assessment_location,
         "実施場所_他": assessment_location_other,
