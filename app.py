@@ -1036,13 +1036,17 @@ def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, 
                     if manual_inputs.get("続柄"):
                         manual_updates.append({'range': 'K14', 'values': [[manual_inputs["続柄"]]]})
                     
+                    # 続柄（他）→ N14
+                    if manual_inputs.get("続柄_他"):
+                        manual_updates.append({'range': 'N14', 'values': [[manual_inputs["続柄_他"]]]})
+                    
                     # 受付方法 → X13
                     if manual_inputs.get("受付方法"):
                         manual_updates.append({'range': 'X13', 'values': [[manual_inputs["受付方法"]]]})
                     
-                    # 受付方法（他）→ A13
+                    # 受付方法（他）→ AA13
                     if manual_inputs.get("受付方法_他"):
-                        manual_updates.append({'range': 'A13', 'values': [[manual_inputs["受付方法_他"]]]})
+                        manual_updates.append({'range': 'AA13', 'values': [[manual_inputs["受付方法_他"]]]})
                     
                     # アセスメント理由 → F15
                     if manual_inputs.get("アセスメント理由"):
@@ -1532,6 +1536,14 @@ if mode == "PDFから転記":
             key="assess_relationship"
         )
         
+        # 続柄が「他」の場合の入力
+        assessment_relationship_other = ""
+        if assessment_relationship == "他":
+            assessment_relationship_other = st.text_input(
+                "続柄【他】の内容",
+                key="assess_relationship_other"
+            )
+        
         # 受付方法
         reception_method_options = ["来所", "電話", "他"]
         assessment_reception_method = st.selectbox(
@@ -1586,6 +1598,7 @@ if mode == "PDFから転記":
         "受付対応者": assessment_reception_staff,
         "相談者氏名": assessment_consultant_name,
         "続柄": assessment_relationship,
+        "続柄_他": assessment_relationship_other,
         "受付方法": assessment_reception_method,
         "受付方法_他": assessment_reception_method_other,
         "アセスメント理由": assessment_reason,
