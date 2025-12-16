@@ -2036,6 +2036,54 @@ if st.session_state.extracted_data:
 
 
 
+# ========== アセスメントシート（シート2）用の結果表示 ==========
+if st.session_state.get('extracted_data2') and st.session_state.get('mapping2_dict'):
+    with st.expander("📊 抽出結果詳細を表示（ｱｾｽﾒﾝﾄｼｰﾄ）", expanded=False):
+        tab1_s2, tab2_s2, tab3_s2 = st.tabs(["🤖 Gemini生の抽出結果", "🗺️ マッピング分析", "📋 最終結果一覧"])
+        with tab1_s2:
+            st.markdown("### 💡 シート2用のGemini抽出データ")
+            if st.session_state.raw_extracted_data:
+                st.json(st.session_state.raw_extracted_data)
+        with tab2_s2:
+            st.markdown("### 🗺️ ｱｾｽﾒﾝﾄｼｰﾄのマッピング照合結果")
+            if st.session_state.mapping2_dict:
+                import pandas as pd
+                mapping_data_s2 = []
+                for item_name, info in st.session_state.mapping2_dict.items():
+                    mapped_value = st.session_state.extracted_data2.get(item_name, "")
+                    status = "✅ マッチ" if item_name in st.session_state.extracted_data2 else "⚠️ 未マッチ"
+                    mapping_data_s2.append({"項目名": item_name, "セル": info["cell"], "状態": status, "値": mapped_value})
+                st.dataframe(pd.DataFrame(mapping_data_s2), use_container_width=True)
+        with tab3_s2:
+            st.markdown("### 📋 ｱｾｽﾒﾝﾄｼｰﾄへの転記データ")
+            if st.session_state.extracted_data2:
+                import pandas as pd
+                st.dataframe(pd.DataFrame([{"項目": k, "値": v} for k, v in st.session_state.extracted_data2.items()]), use_container_width=True)
+
+# ========== 抽出データ検索機能 ==========
+if st.session_state.get('raw_extracted_data'):
+    with st.expander("🔍 抽出データを検索", expanded=False):
+        st.markdown("### 🔍 アップロードデータから検索")
+        st.caption("AIが抽出できなかった情報を探す際に便利です")
+        search_query = st.text_input("検索キーワード", placeholder="例: 住所、電話...", key="search_raw_data")
+        if search_query:
+            results = []
+            def search_dict(data, query, path=""):
+                if isinstance(data, dict):
+                    for k, v in data.items():
+                        p = f"{path}.{k}" if path else k
+                        if query.lower() in str(k).lower() or query.lower() in str(v).lower():
+                            results.append({"場所": p, "キー": k, "値": str(v)[:200]})
+                        if isinstance(v, dict):
+                            search_dict(v, query, p)
+            search_dict(st.session_state.raw_extracted_data, search_query)
+            if results:
+                st.success(f"「{search_query}」で {len(results)}件")
+                import pandas as pd
+                st.dataframe(pd.DataFrame(results), use_container_width=True)
+            else:
+                st.warning(f"「{search_query}」は見つかりませんでした")
+
 # 転記結果の表示
 if 'last_write_url' in st.session_state and st.session_state.last_write_url:
     st.markdown("---")
