@@ -1227,33 +1227,55 @@ with st.sidebar:
         # コピー先フォルダ指定（保護有効時のみ表示）
         destination_folder_id = None
         if enable_template_protection:
-            # デフォルトのフォルダIDをSecrets/envから取得
-            default_dest_folder = os.getenv("ASSESSMENT_FOLDER_ID", "1Gt80-DbhrM1dWlLOA8vu7722f3DGqo8y")
-            try:
-                if "ASSESSMENT_FOLDER_ID" in st.secrets:
-                    default_dest_folder = st.secrets["ASSESSMENT_FOLDER_ID"]
-            except:
-                pass
-            
-            # セッションステート初期化
-            if "destination_folder_id" not in st.session_state:
-                st.session_state.destination_folder_id = default_dest_folder
-            
-            destination_folder_id = st.text_input(
-                "保存先フォルダID (Google Drive)",
-                value=st.session_state.destination_folder_id,
-                key="input_destination_folder_id",
-                help="新規作成するシートの保存先フォルダIDを指定します"
-            )
-            
-            # 入力値のクリーニング（URLパラメータの削除など）
-            if destination_folder_id:
-                # ?以降を削除
-                if "?" in destination_folder_id:
-                     destination_folder_id = destination_folder_id.split("?")[0]
+            # シートタイプ別にデフォルトフォルダIDを取得
+            def get_dest_folder_for_type(stype):
+                if stype == "アセスメントシート":
+                    folder_key = "ASSESSMENT_FOLDER_ID"
+                    default_val = "1Gt80-DbhrM1dWlLOA8vu7722f3DGqo8y"
+                elif stype == "運営会議録":
+                    folder_key = "MANAGEMENT_MEETING_DEST_FOLDER_ID"
+                    default_val = ""  # 設定されていなければ元ファイルと同じ場所
+                elif stype == "サービス担当者会議議事録":
+                    folder_key = "SERVICE_MEETING_DEST_FOLDER_ID"
+                    default_val = ""  # 設定されていなければ元ファイルと同じ場所
+                else:
+                    folder_key = "ASSESSMENT_FOLDER_ID"
+                    default_val = ""
                 
-                # 更新があればセッションステートに保存
-                st.session_state.destination_folder_id = destination_folder_id
+                val = os.getenv(folder_key, default_val)
+                try:
+                    if not val and folder_key in st.secrets:
+                        val = st.secrets[folder_key]
+                except:
+                    pass
+                return val
+            
+            default_dest_folder = get_dest_folder_for_type(sheet_type)
+            
+            # セッションステート初期化（シートタイプ別キー）
+            folder_state_key = f"destination_folder_id_{sheet_type}"
+            if folder_state_key not in st.session_state:
+                st.session_state[folder_state_key] = default_dest_folder
+            
+            # アセスメントシートの場合のみフォルダID入力を表示
+            if sheet_type == "アセスメントシート":
+                destination_folder_id = st.text_input(
+                    "保存先フォルダID (Google Drive)",
+                    value=st.session_state[folder_state_key],
+                    key="input_destination_folder_id",
+                    help="新規作成するシートの保存先フォルダIDを指定します"
+                )
+                
+                # 入力値のクリーニング（URLパラメータの削除など）
+                if destination_folder_id:
+                    if "?" in destination_folder_id:
+                         destination_folder_id = destination_folder_id.split("?")[0]
+                    st.session_state[folder_state_key] = destination_folder_id
+            else:
+                # 会議録の場合は、フォルダ指定なし（元のスプレッドシートと同じ場所に作成）
+                destination_folder_id = st.session_state[folder_state_key] if st.session_state[folder_state_key] else None
+                if not destination_folder_id:
+                    st.caption("💡 新規スプレッドシートは元ファイルと同じ場所に作成されます")
         
         st.markdown("---")
         
