@@ -839,7 +839,7 @@ def upload_to_google_drive(uploaded_file, folder_id, service_account_info):
         # 認証
         from google.oauth2 import service_account
         
-        SCOPES = ['[https://www.googleapis.com/auth/drive](https://www.googleapis.com/auth/drive)']
+        SCOPES = ['https://www.googleapis.com/auth/drive']
         credentials = service_account.Credentials.from_service_account_info(
             service_account_info, scopes=SCOPES
         )
