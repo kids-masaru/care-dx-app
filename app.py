@@ -946,14 +946,13 @@ def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, 
     target_sheet_url = None
     
     # テンプレート保護が有効な場合はコピーを作成
-    # ただし、運営会議録・サービス担当者会議はGAS側で新規作成するため、アプリ側での新規作成はスキップする
-    if enable_template_protection and sheet_type not in ["運営会議録", "サービス担当者会議議事録"]:
+    if enable_template_protection:
         with st.spinner("📋 スプレッドシートをコピー中..."):
             import datetime
             year_month = datetime.datetime.now().strftime("%Y%m") # 日付は入れないが、一応ユニークに
             
-            # アセスメントシートの場合は利用者名を入れる
-            user_name_prefix = ""
+            # ファイル名のプレフィックスを決定
+            name_prefix = ""
             if sheet_type == "アセスメントシート":
                  user_name = st.session_state.extracted_data.get("利用者情報_氏名_漢字")
                  if not user_name:
@@ -961,11 +960,17 @@ def execute_write_logic(spreadsheet_id, enable_template_protection, sheet_type, 
                  if user_name and isinstance(user_name, str):
                      user_name = user_name.replace(" ", "").replace("　", "")
                  if not user_name: user_name = "利用者未定"
-                 user_name_prefix = f"{user_name}_"
+                 name_prefix = f"{user_name}_"
+            elif sheet_type in ["運営会議録", "サービス担当者会議議事録"]:
+                 # 会議の場合は利用者名または開催日を使用
+                 user_name = st.session_state.extracted_data.get("利用者名", "")
+                 if user_name and isinstance(user_name, str):
+                     user_name = user_name.replace(" ", "").replace("　", "")
+                     name_prefix = f"{user_name}_"
             
             date_str = datetime.datetime.now().strftime("%Y%m%d")
             # 新規ファイル名の生成
-            new_filename = f"{user_name_prefix}{date_str}_{sheet_type}"
+            new_filename = f"{name_prefix}{date_str}_{sheet_type}"
             
             new_id, new_url = copy_spreadsheet(client, spreadsheet_id, new_filename, destination_folder_id)
             if new_id:
