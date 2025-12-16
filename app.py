@@ -428,7 +428,7 @@ def extract_from_pdf(model, pdf_files, mapping_dict):
             prompt_parts = [prompt_content] + uploaded_parts
             
             # Gemini実行（リトライ機能付き）
-            max_retries = 3
+            max_retries = 5
             retry_count = 0
             response = None
             section_data = None
@@ -449,11 +449,11 @@ def extract_from_pdf(model, pdf_files, mapping_dict):
                                 reason_msg = reason
                             
                             if retry_count < max_retries:
-                                st.warning(f"⚠️ {section_name} がブロックされました ({reason_msg})。リトライ {retry_count}/{max_retries}...")
+                                # 途中経過は表示しない（静かにリトライ）
                                 time.sleep(2)  # 少し待機
                                 continue
                             else:
-                                st.error(f"❌ {section_name} は{max_retries}回試行しましたが、AIフィルターによりブロックされ続けました。この項目は処理できません。")
+                                st.error(f"❌ {section_name} は{max_retries}回試行しましたが、AIフィルターによりブロックされました。")
                                 print(f"Blocked after {max_retries} retries: {response.prompt_feedback}")
                                 # リトライ失敗時はエラーとして扱う
                                 raise Exception(f"{section_name} blocked after {max_retries} retries")
@@ -467,7 +467,7 @@ def extract_from_pdf(model, pdf_files, mapping_dict):
                             raise
                         retry_count += 1
                         if retry_count < max_retries:
-                            st.warning(f"⚠️ {section_name} の処理中にエラー: {str(e)}。リトライ {retry_count}/{max_retries}...")
+                            # 途中経過は表示しない（静かにリトライ）
                             time.sleep(2)
                             continue
                         else:

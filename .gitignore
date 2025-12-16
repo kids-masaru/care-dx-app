@@ -49,5 +49,8 @@ Thumbs.db
 temp_*
 *.tmp
 
-# Config files (contains sensitive data)
-config/
+# Config files (contains sensitive data - but allow mapping files)
+config/service_account.json
+!config/mapping.txt
+!config/mapping2.txt
+!config/upload_icon.png
