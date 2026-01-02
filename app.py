@@ -25,6 +25,7 @@ from googleapiclient.http import MediaIoBaseUpload
 # カスタムモジュール
 # ※実行環境に mapping_parser.py が存在することを確認してください
 from mapping_parser import parse_mapping, generate_extraction_schemas, generate_json_schema
+from utils.genogram_bridge import generate_genogram_url
 
 # 環境変数の読み込み
 load_dotenv()
@@ -2010,6 +2011,37 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                         status_text.text("✅ 完了しました！")
                         progress_bar.progress(100)
                         st.success("✅ AI抽出とマッピングが完了しました！")
+
+                        # --- ジェノグラム連携 ---
+                        st.markdown("---")
+                        st.subheader("👨‍👩‍👧‍👦 ジェノグラム生成")
+                        st.info("AIが抽出した情報を元に、ジェノグラムエディタを起動できます。")
+                        
+                        if st.button("ジェノグラムエディタで開く (AI自動生成)", key="btn_genogram"):
+                            with st.spinner("ジェノグラムデータを生成中..."):
+                                try:
+                                    # ファイルポインタをリセット
+                                    for f in uploaded_files:
+                                        f.seek(0)
+                                    
+                                    # 抽出されたテキスト情報をコンテキストとして渡す
+                                    context_text = ""
+                                    if st.session_state.extracted_data:
+                                        context_text = json.dumps(st.session_state.extracted_data, ensure_ascii=False)
+                                    
+                                    genogram_url = generate_genogram_url(
+                                        text=context_text,
+                                        files=uploaded_files,
+                                        api_key=api_key
+                                    )
+                                    
+                                    if genogram_url:
+                                        st.success("生成完了！以下のボタンからエディタを開いてください")
+                                        st.link_button("👉 ジェノグラムエディタへ移動", genogram_url)
+                                    else:
+                                        st.error("生成に失敗しました。Genogram Editorが起動しているか確認してください (http://localhost:3000)")
+                                except Exception as ge:
+                                    st.error(f"エラーが発生しました: {ge}")
                         
                         # --- 自動転記 ---
                         success, sheet_url, write_count = execute_write_logic(

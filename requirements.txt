@@ -9,3 +9,5 @@ google-auth
 pillow
 graphviz
 streamlit-agraph
+requests
+lzstring
