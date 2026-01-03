@@ -1733,8 +1733,8 @@ if mode == "PDFから転記":
     st.info("💡 PDFや画像に加えて、音声ファイル（録音データ）もアップロード可能になりました！")
 
     uploaded_files = st.file_uploader(
-        "ファイルを選択 (PDF, 画像, 音声[MP3/M4A/WAV])",
-        type=['pdf', 'png', 'jpg', 'jpeg', 'mp3', 'm4a', 'wav'],
+        "ファイルを選択 (PDF, 画像, 音声[MP3/M4A/WAV/MP4/AAC])",
+        type=['pdf', 'png', 'jpg', 'jpeg', 'mp3', 'm4a', 'wav', 'mp4', 'aac', 'wma'],
         accept_multiple_files=True
     )
 
