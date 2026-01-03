@@ -28,7 +28,7 @@ from utils.mapping_parser import parse_mapping, generate_extraction_schemas, gen
 from utils.genogram_bridge import generate_genogram_url
 
 # 環境変数の読み込み
-load_dotenv()
+load_dotenv(override=True)
 
 # 設定ファイル保存用ディレクトリ
 CONFIG_DIR = Path("config")
