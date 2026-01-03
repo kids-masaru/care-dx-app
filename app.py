@@ -23,8 +23,8 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 
 # カスタムモジュール
-# ※実行環境に mapping_parser.py が存在することを確認してください
-from mapping_parser import parse_mapping, generate_extraction_schemas, generate_json_schema
+# ※実行環境に utils/mapping_parser.py が存在することを確認してください
+from utils.mapping_parser import parse_mapping, generate_extraction_schemas, generate_json_schema
 from utils.genogram_bridge import generate_genogram_url
 
 # 環境変数の読み込み
