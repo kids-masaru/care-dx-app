@@ -121,8 +121,9 @@ JSONのみを出力してください。説明は不要です。"""
         
         # URL生成
         full_url = f"{GENOGRAM_EDITOR_URL}?data={compressed}"
-        return full_url
+        return full_url, None
 
     except Exception as e:
-        print(f"Genogram Generation Error: {e}")
-        return None
+        error_msg = f"{str(e)}"
+        print(f"Genogram Generation Error: {error_msg}")
+        return None, error_msg

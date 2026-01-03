@@ -2017,6 +2017,7 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                         st.subheader("👨‍👩‍👧‍👦 ジェノグラム生成")
                         
                         genogram_url = None
+                        error_msg = None
                         try:
                             with st.spinner("AIが家系図データを生成中..."):
                                 # ファイルポインタをリセット
@@ -2028,13 +2029,16 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                                 if st.session_state.extracted_data:
                                     context_text = json.dumps(st.session_state.extracted_data, ensure_ascii=False)
                                 
-                                genogram_url = generate_genogram_url(
+                                genogram_url, error_msg = generate_genogram_url(
                                     text=context_text,
                                     files=uploaded_files,
                                     api_key=api_key
                                 )
                         except Exception as ge:
-                            st.error(f"ジェノグラム生成エラー: {ge}")
+                            st.error(f"ジェノグラム生成予期せぬエラー: {ge}")
+
+                        if error_msg:
+                            st.error(f"ジェノグラムAI生成エラー詳細: {error_msg}")
 
                         if genogram_url:
                             st.success("✨ ジェノグラムの準備ができました")
