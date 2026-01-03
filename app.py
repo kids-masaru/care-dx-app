@@ -1730,7 +1730,7 @@ if mode == "PDFから転記":
     with col_text:
         st.subheader("ファイルアップロード")
 
-    st.info("💡 PDFや画像に加えて、音声ファイル（録音データ）もアップロード可能になりました！")
+
 
     uploaded_files = st.file_uploader(
         "ファイルを選択 (PDF, 画像, 音声[MP3/M4A/WAV/MP4/AAC])",
