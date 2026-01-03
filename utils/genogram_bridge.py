@@ -28,7 +28,7 @@ def generate_genogram_url(text: str = "", files: list = None, api_key: str = "")
         # Gemini設定
         genai.configure(api_key=api_key)
         # User specified model for 2026 availability
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        model = genai.GenerativeModel("gemini-3-flash-preview")
 
         # プロンプト (Next.js側と同じロジック)
         system_prompt = """あなたは家族構成を分析する専門家です。

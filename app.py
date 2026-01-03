@@ -189,7 +189,7 @@ def load_saved_mapping():
         return None
 
 
-def setup_gemini(api_key, model_name="gemini-2.5-pro"):
+def setup_gemini(api_key, model_name="gemini-3-flash-preview"):
     """Gemini APIのセットアップ"""
     try:
         if not api_key:
@@ -1335,15 +1335,15 @@ with st.sidebar:
     api_key = default_api_key # デフォルト値を使用
     
     # モデル選択（環境変数から取得、なければデフォルト値）
-    default_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    default_model = os.getenv("GEMINI_MODEL", "gemini-3-flash-preview")
     model_options = [
-        "gemini-2.0-flash",
-        "gemini-2.5-flash-lite",
+        "gemini-3-flash-preview",
         "gemini-2.5-flash",
         "gemini-2.5-pro",
-        "gemini-3-pro"
+        "gemini-2.0-flash",
+        "gemini-2.5-flash-lite",
     ]
-    model_index = model_options.index(default_model) if default_model in model_options else 3  # デフォルトはgemini-2.5-pro
+    model_index = model_options.index(default_model) if default_model in model_options else 0  # デフォルトはgemini-3-flash-preview
     model_name = st.selectbox(
         "Geminiモデル",
         model_options,
