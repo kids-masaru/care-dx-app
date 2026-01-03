@@ -27,7 +27,8 @@ def generate_genogram_url(text: str = "", files: list = None, api_key: str = "")
 
         # Gemini設定
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash") # 高速かつ十分な性能
+        # User specified model for 2026 availability
+        model = genai.GenerativeModel("gemini-2.5-flash")
 
         # プロンプト (Next.js側と同じロジック)
         system_prompt = """あなたは家族構成を分析する専門家です。
@@ -126,4 +127,16 @@ JSONのみを出力してください。説明は不要です。"""
     except Exception as e:
         error_msg = f"{str(e)}"
         print(f"Genogram Generation Error: {error_msg}")
+        
+        # モデルが見つからない場合、利用可能なモデル一覧を表示してデバッグ支援
+        if "404" in error_msg or "not found" in error_msg:
+            try:
+                print("--- Available Models ---")
+                for m in genai.list_models():
+                    if 'generateContent' in m.supported_generation_methods:
+                        print(m.name)
+                print("------------------------")
+            except:
+                pass
+                
         return None, error_msg
