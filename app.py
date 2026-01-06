@@ -2054,26 +2054,6 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                         progress_bar.progress(100)
                         st.success("✅ AI抽出とマッピングが完了しました！")
 
-                        # --- ジェノグラム連携 (自動実行) ---
-                        st.markdown("---")
-                        st.subheader("👨‍👩‍👧‍👦 ジェノグラム生成")
-                        
-                        genogram_url = None
-                        error_msg = None
-                        try:
-                            with st.spinner("AIが家系図データを生成中..."):
-                                # ファイルポインタをリセット
-                                for f in uploaded_files:
-                                    f.seek(0)
-                                
-                                # 抽出されたテキスト情報をコンテキストとして渡す
-                                context_text = ""
-                                if st.session_state.extracted_data:
-                                    context_text = json.dumps(st.session_state.extracted_data, ensure_ascii=False)
-                                
-                                genogram_url, error_msg = generate_genogram_url(
-                                    text=context_text,
-                                    files=uploaded_files,
                         # --- 統合データ生成 (ジェノグラム + 身体図) ---
                         st.markdown("---")
                         st.subheader("📊 図解データの生成")
