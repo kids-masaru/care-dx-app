@@ -1394,7 +1394,7 @@ with st.sidebar:
                     gap: 10px;
                     transition: all 0.2s;
                 " onmouseover="this.style.boxShadow='0 6px 8px rgba(74, 144, 226, 0.3)'; this.style.backgroundColor='#fff';" onmouseout="this.style.boxShadow='0 4px 6px rgba(74, 144, 226, 0.2)'; this.style.backgroundColor='#fdfcf0';">
-                    <img src="data:image/png;base64,{encoded_string}" style="width: 32px; height: 32px; object-fit: contain;">
+                    <img src="data:image/png;base64,{encoded_string}" style="width: 48px; height: 48px; object-fit: contain;">
                     <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
                         <span style="color: #333; font-weight: bold; font-size: 14px;">CareDX エディタ</span>
                         <span style="color: #666; font-size: 10px; white-space: nowrap;">ジェノグラム・家屋図・身体図</span>
