@@ -2099,41 +2099,16 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                             st.success("✨ 図解データの準備ができました")
                             
                             # Compact side-by-side buttons
-                            button_html = '<div style="display: flex; gap: 10px; margin-top: 10px;">'
+                            genogram_btn = ""
+                            bodymap_btn = ""
                             
                             if genogram_url:
-                                button_html += f'''
-                                <a href="{genogram_url}" target="_blank" style="
-                                    flex: 1;
-                                    text-decoration: none;
-                                    background: #f0f9ff;
-                                    color: #0369a1;
-                                    padding: 12px 16px;
-                                    border-radius: 8px;
-                                    text-align: center;
-                                    border: 1px solid #bae6fd;
-                                    font-weight: bold;
-                                    font-size: 14px;
-                                ">👨‍👩‍👧 ジェノグラムの確認</a>
-                                '''
+                                genogram_btn = f'<a href="{genogram_url}" target="_blank" style="flex:1;text-decoration:none;background:#f0f9ff;color:#0369a1;padding:12px 16px;border-radius:8px;text-align:center;border:1px solid #bae6fd;font-weight:bold;font-size:14px;">👨‍👩‍👧 ジェノグラムの確認</a>'
                             
                             if bodymap_url:
-                                button_html += f'''
-                                <a href="{bodymap_url}" target="_blank" style="
-                                    flex: 1;
-                                    text-decoration: none;
-                                    background: #fef3c7;
-                                    color: #92400e;
-                                    padding: 12px 16px;
-                                    border-radius: 8px;
-                                    text-align: center;
-                                    border: 1px solid #fcd34d;
-                                    font-weight: bold;
-                                    font-size: 14px;
-                                ">🩺 身体図の確認</a>
-                                '''
+                                bodymap_btn = f'<a href="{bodymap_url}" target="_blank" style="flex:1;text-decoration:none;background:#fef3c7;color:#92400e;padding:12px 16px;border-radius:8px;text-align:center;border:1px solid #fcd34d;font-weight:bold;font-size:14px;">🩺 身体図の確認</a>'
                             
-                            button_html += '</div>'
+                            button_html = f'<div style="display:flex;gap:10px;margin-top:10px;">{genogram_btn}{bodymap_btn}</div>'
                             st.markdown(button_html, unsafe_allow_html=True)
                         else:
                             st.info("データ生成に失敗しました。")
