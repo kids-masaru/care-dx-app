@@ -2108,7 +2108,7 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                             if bodymap_url:
                                 bodymap_btn = f'<a href="{bodymap_url}" target="_blank" style="flex:1;text-decoration:none;background:#fef3c7;color:#92400e;padding:12px 16px;border-radius:8px;text-align:center;border:1px solid #fcd34d;font-weight:bold;font-size:14px;">🩺 身体図の確認</a>'
                             
-                            button_html = f'<div style="display:flex;gap:10px;margin-top:10px;">{genogram_btn}{bodymap_btn}</div>'
+                            button_html = f'<div style="display:flex;gap:10px;margin-top:10px;margin-bottom:20px;">{genogram_btn}{bodymap_btn}</div>'
                             st.markdown(button_html, unsafe_allow_html=True)
                         else:
                             st.info("データ生成に失敗しました。")
