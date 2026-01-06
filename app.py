@@ -1382,19 +1382,23 @@ with st.sidebar:
             st.markdown(f"""
             <a href="{editor_url}" target="_blank" style="text-decoration: none;">
                 <div style="
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    color: white;
-                    padding: 15px;
-                    border-radius: 10px;
-                    text-align: center;
+                    background: #fdfcf0;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 8px;
+                    padding: 8px 12px;
                     margin-top: 10px;
                     margin-bottom: 20px;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                    transition: transform 0.2s;
-                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                    <img src="data:image/png;base64,{encoded_string}" style="width: 40px; height: 40px; margin-bottom: 5px; border-radius: 8px;"><br>
-                    <span style="font-weight: bold; font-size: 1.1em;">CareDX エディタ</span><br>
-                    <span style="font-size: 0.8em; opacity: 0.9;">(ジェノグラム・家屋図・身体図)</span>
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    transition: all 0.2s;
+                " onmouseover="this.style.borderColor='#4A90E2'; this.style.backgroundColor='#fff';" onmouseout="this.style.borderColor='#e0e0e0'; this.style.backgroundColor='#fdfcf0';">
+                    <img src="data:image/png;base64,{encoded_string}" style="width: 32px; height: 32px; object-fit: contain;">
+                    <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
+                        <span style="color: #333; font-weight: bold; font-size: 14px;">CareDX エディタ</span>
+                        <span style="color: #666; font-size: 10px; white-space: nowrap;">ジェノグラム・家屋図・身体図</span>
+                    </div>
                 </div>
             </a>
             """, unsafe_allow_html=True)
