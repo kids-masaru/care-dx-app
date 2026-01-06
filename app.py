@@ -2054,11 +2054,12 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                         progress_bar.progress(100)
                         st.success("✅ AI抽出とマッピングが完了しました！")
 
-                        # --- 統合データ生成 (ジェノグラム + 身体図) ---
+                        # --- 図解データ生成 (ジェノグラム + 身体図を別々に) ---
                         st.markdown("---")
-                        st.subheader("📊 図解データの生成")
+                        st.subheader("📊 図解データの確認")
                         
-                        editor_url = None
+                        genogram_url = None
+                        bodymap_url = None
                         gen_error = None
                         
                         try:
@@ -2070,32 +2071,23 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                                 if st.session_state.extracted_data:
                                     context_text = json.dumps(st.session_state.extracted_data, ensure_ascii=False)
 
-                                # 2. Generate Data Parallelly (sequentially for now)
+                                lz = LZString()
+
+                                # 2. Generate Genogram Data & URL
                                 genogram_data = generate_genogram_data(text=context_text, files=uploaded_files, api_key=api_key)
+                                if genogram_data:
+                                    genogram_json = json.dumps({"genogram": genogram_data}, ensure_ascii=False)
+                                    genogram_compressed = lz.compressToEncodedURIComponent(genogram_json)
+                                    genogram_url = f"{GENOGRAM_EDITOR_URL}?data={genogram_compressed}"
                                 
-                                # Reset file pointers for Body Map if needed (though BodyMap uses text mostly)
+                                # 3. Generate Body Map Data & URL
                                 for f in uploaded_files:
                                     f.seek(0)
                                 bodymap_data = generate_bodymap_data(text=context_text, api_key=api_key)
-                                
-                                # 3. Combine
-                                combined_data = {}
-                                if genogram_data:
-                                    combined_data["genogram"] = genogram_data
                                 if bodymap_data:
-                                    combined_data["bodyMap"] = bodymap_data # Ensure this key matches JS logic using 'bodyMap'
-                                
-                                if combined_data:
-                                    # 4. Compress
-                                    lz = LZString()
-                                    json_str = json.dumps(combined_data, ensure_ascii=False)
-                                    compressed = lz.compressToEncodedURIComponent(json_str)
-                                    
-                                    # 5. Generate Single URL
-                                    # Point to root (Genogram Page) which has the header/context logic
-                                    editor_url = f"{GENOGRAM_EDITOR_URL}?data={compressed}"
-                                else:
-                                    gen_error = "データの生成に失敗しました（情報不足の可能性があります）"
+                                    bodymap_json = json.dumps({"bodyMap": bodymap_data}, ensure_ascii=False)
+                                    bodymap_compressed = lz.compressToEncodedURIComponent(bodymap_json)
+                                    bodymap_url = f"{GENOGRAM_EDITOR_URL}/body-map?data={bodymap_compressed}"
 
                         except Exception as e:
                             gen_error = f"生成エラー: {str(e)}"
@@ -2103,38 +2095,46 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                         if gen_error:
                             st.error(gen_error)
 
-                        if editor_url:
-                            st.success("✨ CareDXエディタの準備ができました")
+                        if genogram_url or bodymap_url:
+                            st.success("✨ 図解データの準備ができました")
                             
-                            # 1. 自動オープン
-                            import streamlit.components.v1 as components
-                            js_code = f"""
-                            <script>
-                                window.open('{editor_url}', '_blank');
-                            </script>
-                            """
-                            components.html(js_code, height=0)
+                            # Compact side-by-side buttons
+                            button_html = '<div style="display: flex; gap: 10px; margin-top: 10px;">'
                             
-                            # 2. 手動ボタン
-                            st.markdown("""
-                            <a href="{url}" target="_blank" style="text-decoration: none;">
-                                <div style="
-                                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                                    color: white;
-                                    padding: 20px;
-                                    border-radius: 12px;
+                            if genogram_url:
+                                button_html += f'''
+                                <a href="{genogram_url}" target="_blank" style="
+                                    flex: 1;
+                                    text-decoration: none;
+                                    background: #f0f9ff;
+                                    color: #0369a1;
+                                    padding: 12px 16px;
+                                    border-radius: 8px;
                                     text-align: center;
-                                    margin-top: 10px;
-                                    margin-bottom: 20px;
-                                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-                                    transition: transform 0.2s;
-                                    border: 2px solid white;
-                                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
-                                    <span style="font-size: 1.5em;">👉 CareDX エディタを開く</span><br>
-                                    <span style="font-size: 0.9em; opacity: 0.9;">(ジェノグラム・身体図・家屋図)</span>
-                                </div>
-                            </a>
-                            """.format(url=editor_url), unsafe_allow_html=True)
+                                    border: 1px solid #bae6fd;
+                                    font-weight: bold;
+                                    font-size: 14px;
+                                ">👨‍👩‍👧 ジェノグラムの確認</a>
+                                '''
+                            
+                            if bodymap_url:
+                                button_html += f'''
+                                <a href="{bodymap_url}" target="_blank" style="
+                                    flex: 1;
+                                    text-decoration: none;
+                                    background: #fef3c7;
+                                    color: #92400e;
+                                    padding: 12px 16px;
+                                    border-radius: 8px;
+                                    text-align: center;
+                                    border: 1px solid #fcd34d;
+                                    font-weight: bold;
+                                    font-size: 14px;
+                                ">🩺 身体図の確認</a>
+                                '''
+                            
+                            button_html += '</div>'
+                            st.markdown(button_html, unsafe_allow_html=True)
                         else:
                             st.info("データ生成に失敗しました。")
 
