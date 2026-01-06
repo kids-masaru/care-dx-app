@@ -26,6 +26,8 @@ from googleapiclient.http import MediaIoBaseUpload
 # ※実行環境に utils/mapping_parser.py が存在することを確認してください
 from utils.mapping_parser import parse_mapping, generate_extraction_schemas, generate_json_schema
 from utils.genogram_bridge import generate_genogram_url
+from utils.kaokuzu_bridge import generate_kaokuzu_url
+from utils.bodymap_bridge import generate_bodymap_url
 
 # 環境変数の読み込み
 load_dotenv(override=True)
@@ -1365,7 +1367,42 @@ with st.sidebar:
         mode = "音声会議録作成"
     st.session_state.mode = mode
     
-    st.info(f"現在のモード: {mode}")
+    # CareDX Editor Link
+    editor_url = "https://genogram-editor.vercel.app"
+    try:
+        from PIL import Image
+        import base64
+        
+        # Load custom icon if exists
+        editor_icon_path = Path("assets/editor_icon.png")
+        if editor_icon_path.exists():
+            with open(editor_icon_path, "rb") as image_file:
+                encoded_string = base64.b64encode(image_file.read()).decode()
+            
+            st.markdown(f"""
+            <a href="{editor_url}" target="_blank" style="text-decoration: none;">
+                <div style="
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 15px;
+                    border-radius: 10px;
+                    text-align: center;
+                    margin-top: 10px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                    transition: transform 0.2s;
+                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                    <img src="data:image/png;base64,{encoded_string}" style="width: 40px; height: 40px; margin-bottom: 5px; border-radius: 8px;"><br>
+                    <span style="font-weight: bold; font-size: 1.1em;">CareDX エディタ</span><br>
+                    <span style="font-size: 0.8em; opacity: 0.9;">(ジェノグラム・家屋図・身体図)</span>
+                </div>
+            </a>
+            """, unsafe_allow_html=True)
+        else:
+             st.link_button("🎨 CareDX エディタを開く", editor_url, type="primary")
+
+    except Exception:
+        st.link_button("🎨 CareDX エディタを開く", editor_url, type="primary")
 
     # デフォルトのスプレッドシートID（環境変数から取得、なければプレースホルダー）
     default_sheet_ids = {
@@ -2057,6 +2094,70 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                             st.link_button("👉 ジェノグラムエディタへ移動", genogram_url)
                         else:
                             st.error("ジェノグラムの生成に失敗しました。")
+                        
+                        # --- 家屋図連携 (自動実行) ---
+                        st.markdown("---")
+                        st.subheader("🏠 家屋図生成")
+                        
+                        kaokuzu_url = None
+                        kaokuzu_error = None
+                        try:
+                            with st.spinner("AIが家屋図データを生成中..."):
+                                for f in uploaded_files:
+                                    f.seek(0)
+                                
+                                context_text = ""
+                                if st.session_state.extracted_data:
+                                    context_text = json.dumps(st.session_state.extracted_data, ensure_ascii=False)
+                                
+                                kaokuzu_url, kaokuzu_error = generate_kaokuzu_url(
+                                    text=context_text,
+                                    files=uploaded_files,
+                                    api_key=api_key
+                                )
+                        except Exception as ke:
+                            st.error(f"家屋図生成予期せぬエラー: {ke}")
+
+                        if kaokuzu_error:
+                            st.error(f"家屋図AI生成エラー詳細: {kaokuzu_error}")
+
+                        if kaokuzu_url:
+                            st.success("✨ 家屋図の準備ができました")
+                            # ボタン表示
+                            st.link_button("👉 家屋図エディタへ移動", kaokuzu_url)
+                        else:
+                            st.info("家屋図の生成に失敗したか、必要な情報が不足しています。")
+
+                        # --- 身体図連携 (自動実行) ---
+                        st.markdown("---")
+                        st.subheader("👤 身体図生成")
+                        
+                        bodymap_url = None
+                        bodymap_error = None
+                        try:
+                            with st.spinner("AIが身体図データを生成中..."):
+                                for f in uploaded_files:
+                                    f.seek(0)
+                                
+                                context_text = ""
+                                if st.session_state.extracted_data:
+                                    context_text = json.dumps(st.session_state.extracted_data, ensure_ascii=False)
+                                
+                                bodymap_url, bodymap_error = generate_bodymap_url(
+                                    text=context_text,
+                                    api_key=api_key
+                                )
+                        except Exception as be:
+                            st.error(f"身体図生成予期せぬエラー: {be}")
+
+                        if bodymap_error:
+                            st.error(f"身体図AI生成エラー詳細: {bodymap_error}")
+
+                        if bodymap_url:
+                            st.success("✨ 身体図の準備ができました")
+                            st.link_button("👉 身体図エディタへ移動", bodymap_url)
+                        else:
+                            st.info("身体図の生成に失敗したか、必要な情報が不足しています。")
                         
                         # --- 自動転記 ---
                         success, sheet_url, write_count = execute_write_logic(
