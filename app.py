@@ -1383,17 +1383,17 @@ with st.sidebar:
             <a href="{editor_url}" target="_blank" style="text-decoration: none;">
                 <div style="
                     background: #fdfcf0;
-                    border: 2px solid #e0e0e0;
+                    border: 2px solid #4A90E2;
                     border-radius: 8px;
                     padding: 8px 12px;
                     margin-top: 10px;
                     margin-bottom: 20px;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                    box-shadow: 0 4px 6px rgba(74, 144, 226, 0.2);
                     display: flex;
                     align-items: center;
                     gap: 10px;
                     transition: all 0.2s;
-                " onmouseover="this.style.borderColor='#4A90E2'; this.style.backgroundColor='#fff';" onmouseout="this.style.borderColor='#e0e0e0'; this.style.backgroundColor='#fdfcf0';">
+                " onmouseover="this.style.boxShadow='0 6px 8px rgba(74, 144, 226, 0.3)'; this.style.backgroundColor='#fff';" onmouseout="this.style.boxShadow='0 4px 6px rgba(74, 144, 226, 0.2)'; this.style.backgroundColor='#fdfcf0';">
                     <img src="data:image/png;base64,{encoded_string}" style="width: 32px; height: 32px; object-fit: contain;">
                     <div style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.2;">
                         <span style="color: #333; font-weight: bold; font-size: 14px;">CareDX エディタ</span>
