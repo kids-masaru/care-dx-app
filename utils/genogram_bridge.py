@@ -7,30 +7,19 @@ from lzstring import LZString
 GENOGRAM_EDITOR_URL = "https://genogram-editor.vercel.app" 
 # 例: GENOGRAM_EDITOR_URL = "https://your-genogram-app.vercel.app"
 
-def generate_genogram_url(text: str = "", files: list = None, api_key: str = ""):
+def generate_genogram_data(text: str = "", files: list = None, api_key: str = ""):
     """
-    Python側でGeminiを呼び出し、結果を圧縮してURLを生成する関数
-    (Vercelの10秒タイムアウト回避のため、Streamlit側で処理を行う)
-
-    Args:
-        text (str): 家族構成の説明テキスト (JSON文字列の可能性もあり)
-        files (list): アップロードされたファイルのリスト (StreamlitのUploadedFile)
-        api_key (str): Gemini API Key
-        
-    Returns:
-        str: ジェノグラムエディタを開くためのURL (エラー時はNone)
+    Genogram Data Extraction Logic
+    Returns: dict (JSON Object) or None
     """
     try:
         if not api_key:
             print("Error: API Key is missing")
             return None
 
-        # Gemini設定
         genai.configure(api_key=api_key)
-        # User specified model for 2026 availability
         model = genai.GenerativeModel("gemini-3-flash-preview")
 
-        # プロンプト (Next.js側と同じロジック)
         system_prompt = """あなたは家族構成を分析する専門家です。
 以下の入力（テキスト、音声、画像、PDFなど）を総合的に分析し、ジェノグラム（家族構成図）を作成するための情報をJSON形式で抽出してください。
 
@@ -85,58 +74,48 @@ JSONのみを出力してください。説明は不要です。"""
 
         prompt_parts = [system_prompt]
 
-        # ファイル入力の処理
         if files:
             for f in files:
-                # バイトデータを取得
                 file_bytes = f.getvalue()
                 mime_type = f.type
-                
-                # Gemini用の辞書形式に変換 (inline_data)
                 prompt_parts.append({
                     "mime_type": mime_type,
                     "data": file_bytes
                 })
 
-        # Gemini実行
         response = model.generate_content(prompt_parts)
         response_text = response.text.strip()
         
-        # JSON抽出処理
         json_text = response_text
         if "```json" in response_text:
             json_text = response_text.split("```json")[1].split("```")[0].strip()
         elif "```" in response_text:
             json_text = response_text.split("```")[1].split("```")[0].strip()
-        elif "{" in response_text: # 単純な波括弧抽出
+        elif "{" in response_text:
              start = response_text.find("{")
              end = response_text.rfind("}") + 1
              json_text = response_text[start:end]
 
-        # JSONとしての妥当性チェック
-        json.loads(json_text) 
-
-        # 圧縮 (lz-string)
-        lz = LZString()
-        compressed = lz.compressToEncodedURIComponent(json_text)
-        
-        # URL生成
-        full_url = f"{GENOGRAM_EDITOR_URL}?data={compressed}"
-        return full_url, None
+        return json.loads(json_text) 
 
     except Exception as e:
         error_msg = f"{str(e)}"
         print(f"Genogram Generation Error: {error_msg}")
+        if "404" in error_msg:
+             # debug info pass
+             pass
+        raise e
+
+def generate_genogram_url(text: str = "", files: list = None, api_key: str = ""):
+    try:
+        data = generate_genogram_data(text, files, api_key)
+        if not data:
+             return None, "No Data"
         
-        # モデルが見つからない場合、利用可能なモデル一覧を表示してデバッグ支援
-        if "404" in error_msg or "not found" in error_msg:
-            try:
-                print("--- Available Models ---")
-                for m in genai.list_models():
-                    if 'generateContent' in m.supported_generation_methods:
-                        print(m.name)
-                print("------------------------")
-            except:
-                pass
-                
-        return None, error_msg
+        lz = LZString()
+        compressed = lz.compressToEncodedURIComponent(json.dumps(data, ensure_ascii=False))
+        full_url = f"{GENOGRAM_EDITOR_URL}?data={compressed}"
+        return full_url, None
+    except Exception as e:
+        return None, str(e)
+

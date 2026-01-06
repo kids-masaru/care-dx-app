@@ -25,9 +25,10 @@ from googleapiclient.http import MediaIoBaseUpload
 # カスタムモジュール
 # ※実行環境に utils/mapping_parser.py が存在することを確認してください
 from utils.mapping_parser import parse_mapping, generate_extraction_schemas, generate_json_schema
-from utils.genogram_bridge import generate_genogram_url
+from utils.genogram_bridge import generate_genogram_url, generate_genogram_data, GENOGRAM_EDITOR_URL
 from utils.kaokuzu_bridge import generate_kaokuzu_url
-from utils.bodymap_bridge import generate_bodymap_url
+from utils.bodymap_bridge import generate_bodymap_url, generate_bodymap_data
+from lzstring import LZString
 
 # 環境変数の読み込み
 load_dotenv(override=True)
@@ -2073,95 +2074,90 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                                 genogram_url, error_msg = generate_genogram_url(
                                     text=context_text,
                                     files=uploaded_files,
-                                    api_key=api_key
-                                )
-                        except Exception as ge:
-                            st.error(f"ジェノグラム生成予期せぬエラー: {ge}")
+                        # --- 統合データ生成 (ジェノグラム + 身体図) ---
+                        st.markdown("---")
+                        st.subheader("📊 図解データの生成")
+                        
+                        editor_url = None
+                        gen_error = None
+                        
+                        try:
+                            with st.spinner("AIがジェノグラムと身体図を生成中..."):
+                                # 1. Context Preparation
+                                for f in uploaded_files:
+                                    f.seek(0)
+                                context_text = ""
+                                if st.session_state.extracted_data:
+                                    context_text = json.dumps(st.session_state.extracted_data, ensure_ascii=False)
 
-                        if error_msg:
-                            st.error(f"ジェノグラムAI生成エラー詳細: {error_msg}")
+                                # 2. Generate Data Parallelly (sequentially for now)
+                                genogram_data = generate_genogram_data(text=context_text, files=uploaded_files, api_key=api_key)
+                                
+                                # Reset file pointers for Body Map if needed (though BodyMap uses text mostly)
+                                for f in uploaded_files:
+                                    f.seek(0)
+                                bodymap_data = generate_bodymap_data(text=context_text, api_key=api_key)
+                                
+                                # 3. Combine
+                                combined_data = {}
+                                if genogram_data:
+                                    combined_data["genogram"] = genogram_data
+                                if bodymap_data:
+                                    combined_data["bodyMap"] = bodymap_data # Ensure this key matches JS logic using 'bodyMap'
+                                
+                                if combined_data:
+                                    # 4. Compress
+                                    lz = LZString()
+                                    json_str = json.dumps(combined_data, ensure_ascii=False)
+                                    compressed = lz.compressToEncodedURIComponent(json_str)
+                                    
+                                    # 5. Generate Single URL
+                                    # Point to root (Genogram Page) which has the header/context logic
+                                    editor_url = f"{GENOGRAM_EDITOR_URL}?data={compressed}"
+                                else:
+                                    gen_error = "データの生成に失敗しました（情報不足の可能性があります）"
 
-                        if genogram_url:
-                            st.success("✨ ジェノグラムの準備ができました")
+                        except Exception as e:
+                            gen_error = f"生成エラー: {str(e)}"
+
+                        if gen_error:
+                            st.error(gen_error)
+
+                        if editor_url:
+                            st.success("✨ CareDXエディタの準備ができました")
                             
-                            # 1. 自動で開くためのJS
+                            # 1. 自動オープン
                             import streamlit.components.v1 as components
                             js_code = f"""
                             <script>
-                                window.open('{genogram_url}', '_blank');
+                                window.open('{editor_url}', '_blank');
                             </script>
                             """
                             components.html(js_code, height=0)
                             
-                            # 2. ブロックされた場合の手動ボタン
-                            st.info("自動で開かない場合は、以下のボタンを押してください")
-                            st.link_button("👉 ジェノグラムエディタへ移動", genogram_url)
+                            # 2. 手動ボタン
+                            st.markdown("""
+                            <a href="{url}" target="_blank" style="text-decoration: none;">
+                                <div style="
+                                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                                    color: white;
+                                    padding: 20px;
+                                    border-radius: 12px;
+                                    text-align: center;
+                                    margin-top: 10px;
+                                    margin-bottom: 20px;
+                                    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                                    transition: transform 0.2s;
+                                    border: 2px solid white;
+                                " onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+                                    <span style="font-size: 1.5em;">👉 CareDX エディタを開く</span><br>
+                                    <span style="font-size: 0.9em; opacity: 0.9;">(ジェノグラム・身体図・家屋図)</span>
+                                </div>
+                            </a>
+                            """.format(url=editor_url), unsafe_allow_html=True)
                         else:
-                            st.error("ジェノグラムの生成に失敗しました。")
-                        
-                        # --- 家屋図連携 (自動実行) ---
-                        st.markdown("---")
-                        st.subheader("🏠 家屋図生成")
-                        
-                        kaokuzu_url = None
-                        kaokuzu_error = None
-                        try:
-                            with st.spinner("AIが家屋図データを生成中..."):
-                                for f in uploaded_files:
-                                    f.seek(0)
-                                
-                                context_text = ""
-                                if st.session_state.extracted_data:
-                                    context_text = json.dumps(st.session_state.extracted_data, ensure_ascii=False)
-                                
-                                kaokuzu_url, kaokuzu_error = generate_kaokuzu_url(
-                                    text=context_text,
-                                    files=uploaded_files,
-                                    api_key=api_key
-                                )
-                        except Exception as ke:
-                            st.error(f"家屋図生成予期せぬエラー: {ke}")
+                            st.info("データ生成に失敗しました。")
 
-                        if kaokuzu_error:
-                            st.error(f"家屋図AI生成エラー詳細: {kaokuzu_error}")
-
-                        if kaokuzu_url:
-                            st.success("✨ 家屋図の準備ができました")
-                            # ボタン表示
-                            st.link_button("👉 家屋図エディタへ移動", kaokuzu_url)
-                        else:
-                            st.info("家屋図の生成に失敗したか、必要な情報が不足しています。")
-
-                        # --- 身体図連携 (自動実行) ---
-                        st.markdown("---")
-                        st.subheader("👤 身体図生成")
-                        
-                        bodymap_url = None
-                        bodymap_error = None
-                        try:
-                            with st.spinner("AIが身体図データを生成中..."):
-                                for f in uploaded_files:
-                                    f.seek(0)
-                                
-                                context_text = ""
-                                if st.session_state.extracted_data:
-                                    context_text = json.dumps(st.session_state.extracted_data, ensure_ascii=False)
-                                
-                                bodymap_url, bodymap_error = generate_bodymap_url(
-                                    text=context_text,
-                                    api_key=api_key
-                                )
-                        except Exception as be:
-                            st.error(f"身体図生成予期せぬエラー: {be}")
-
-                        if bodymap_error:
-                            st.error(f"身体図AI生成エラー詳細: {bodymap_error}")
-
-                        if bodymap_url:
-                            st.success("✨ 身体図の準備ができました")
-                            st.link_button("👉 身体図エディタへ移動", bodymap_url)
-                        else:
-                            st.info("身体図の生成に失敗したか、必要な情報が不足しています。")
                         
                         # --- 自動転記 ---
                         success, sheet_url, write_count = execute_write_logic(

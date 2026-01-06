@@ -17,9 +17,9 @@ GENOGRAM_EDITOR_URL = "https://genogram-editor.vercel.app"
 # I will check that before finalizing the URL. Defaulting to assuming it's accessible.
 # If I don't know the route, I'll guess `/body-map` or check `page.tsx` content.
 
-def generate_bodymap_url(text: str = "", api_key: str = ""):
+def generate_bodymap_data(text: str = "", api_key: str = ""):
     """
-    Extract body map findings from text -> Generate URL for Editor
+    Body Map Data Logic
     """
     try:
         if not api_key:
@@ -70,15 +70,20 @@ JSONのみを出力してください。"""
             end = response_text.rfind("}") + 1
             json_text = response_text[start:end]
 
-        # Validation
-        json.loads(json_text)
+        return json.loads(json_text)
+
+    except Exception as e:
+        raise e
+
+def generate_bodymap_url(text: str = "", api_key: str = ""):
+    try:
+        data = generate_bodymap_data(text, api_key)
+        if not data:
+             return None, "No Data"
 
         lz = LZString()
-        compressed = lz.compressToEncodedURIComponent(json_text)
+        compressed = lz.compressToEncodedURIComponent(json.dumps(data, ensure_ascii=False))
         
-        # Check correct URL path. I will confirm this in next step but for now assuming /body-map
-        # IMPORTANT: The user previously edited `src/components/BodyMapEditor.tsx`.
-        # Where is it used? I should check `src/app/body-map/page.tsx`?
         return f"{GENOGRAM_EDITOR_URL}/body-map?data={compressed}", None
 
     except Exception as e:
