@@ -2083,57 +2083,62 @@ if st.button("🚀 AI処理を実行", type="primary", use_container_width=True)
                                 # 3. Generate Body Map Data & URL
                                 for f in uploaded_files:
                                     f.seek(0)
-                                bodymap_data = generate_bodymap_data(text=context_text, api_key=api_key)
-                                if bodymap_data and bodymap_data.get("findings"):
-                                    # Transform findings to markers format expected by BodyMapEditor
-                                    import uuid
-                                    markers = []
-                                    # Region mapping for positioning
-                                    regions = {
-                                        'head': {'x': 412, 'y': 100}, 'face': {'x': 412, 'y': 100},
-                                        'neck': {'x': 412, 'y': 150}, 'shoulder': {'x': 352, 'y': 170},
-                                        'chest': {'x': 412, 'y': 250}, 'stomach': {'x': 412, 'y': 350},
-                                        'back': {'x': 788, 'y': 250}, 'hip': {'x': 788, 'y': 400},
-                                        'leg': {'x': 382, 'y': 550}, 'arm': {'x': 312, 'y': 300},
-                                        'hand': {'x': 292, 'y': 400}, 'general': {'x': 412, 'y': 350}
-                                    }
-                                    type_mapping = {
-                                        '麻痺': 'Paralysis', 'マヒ': 'Paralysis', 'paralysis': 'Paralysis',
-                                        '欠損': 'Missing', '切断': 'Missing', 'missing': 'Missing',
-                                        '機能低下': 'FunctionLoss', '拘縮': 'FunctionLoss', 'functionloss': 'FunctionLoss',
-                                        'その他': 'Comment', 'コメント': 'Comment', 'comment': 'Comment'
-                                    }
-                                    for idx, f_item in enumerate(bodymap_data["findings"]):
-                                        part = f_item.get("part", "general").lower()
-                                        condition = f_item.get("condition", "")
-                                        note = f_item.get("note", "")
-                                        # Determine marker type
-                                        marker_type = 'Comment'
-                                        for key, val in type_mapping.items():
-                                            if key in condition.lower():
-                                                marker_type = val
-                                                break
-                                        # Get position
-                                        pos = regions.get(part, regions.get('general'))
-                                        # Handle left/right offset
-                                        x_offset = 0
-                                        if '右' in f_item.get("part", "") or 'right' in part:
-                                            x_offset = 60
-                                        elif '左' in f_item.get("part", "") or 'left' in part:
-                                            x_offset = -60
-                                        markers.append({
-                                            'id': str(uuid.uuid4())[:8],
-                                            'x': pos['x'] + x_offset + (idx * 20),  # Slight offset to avoid overlap
-                                            'y': pos['y'],
-                                            'type': marker_type,
-                                            'text': f"{condition}: {note}" if note else condition,
-                                            'view': 'back' if 'back' in part or 'hip' in part else 'front',
-                                            'points': []
-                                        })
-                                    transformed_data = {'markers': markers, 'scale': 1}
-                                    bodymap_json = json.dumps({"bodyMap": transformed_data}, ensure_ascii=False)
-                                    bodymap_compressed = lz.compressToEncodedURIComponent(bodymap_json)
-                                    bodymap_url = f"{GENOGRAM_EDITOR_URL}/body-map?data={bodymap_compressed}"
+                                import uuid
+                                markers = []
+                                try:
+                                    bodymap_data = generate_bodymap_data(text=context_text, api_key=api_key)
+                                    if bodymap_data and bodymap_data.get("findings"):
+                                        # Transform findings to markers format expected by BodyMapEditor
+                                        # Region mapping for positioning
+                                        regions = {
+                                            'head': {'x': 412, 'y': 100}, 'face': {'x': 412, 'y': 100},
+                                            'neck': {'x': 412, 'y': 150}, 'shoulder': {'x': 352, 'y': 170},
+                                            'chest': {'x': 412, 'y': 250}, 'stomach': {'x': 412, 'y': 350},
+                                            'back': {'x': 788, 'y': 250}, 'hip': {'x': 788, 'y': 400},
+                                            'leg': {'x': 382, 'y': 550}, 'arm': {'x': 312, 'y': 300},
+                                            'hand': {'x': 292, 'y': 400}, 'general': {'x': 412, 'y': 350}
+                                        }
+                                        type_mapping = {
+                                            '麻痺': 'Paralysis', 'マヒ': 'Paralysis', 'paralysis': 'Paralysis',
+                                            '欠損': 'Missing', '切断': 'Missing', 'missing': 'Missing',
+                                            '機能低下': 'FunctionLoss', '拘縮': 'FunctionLoss', 'functionloss': 'FunctionLoss',
+                                            'その他': 'Comment', 'コメント': 'Comment', 'comment': 'Comment'
+                                        }
+                                        for idx, f_item in enumerate(bodymap_data["findings"]):
+                                            part = f_item.get("part", "general").lower()
+                                            condition = f_item.get("condition", "")
+                                            note = f_item.get("note", "")
+                                            # Determine marker type
+                                            marker_type = 'Comment'
+                                            for key, val in type_mapping.items():
+                                                if key in condition.lower():
+                                                    marker_type = val
+                                                    break
+                                            # Get position
+                                            pos = regions.get(part, regions.get('general'))
+                                            # Handle left/right offset
+                                            x_offset = 0
+                                            if '右' in f_item.get("part", "") or 'right' in part:
+                                                x_offset = 60
+                                            elif '左' in f_item.get("part", "") or 'left' in part:
+                                                x_offset = -60
+                                            markers.append({
+                                                'id': str(uuid.uuid4())[:8],
+                                                'x': pos['x'] + x_offset + (idx * 20),
+                                                'y': pos['y'],
+                                                'type': marker_type,
+                                                'text': f"{condition}: {note}" if note else condition,
+                                                'view': 'back' if 'back' in part or 'hip' in part else 'front',
+                                                'points': []
+                                            })
+                                except Exception as bm_err:
+                                    print(f"Body map generation error (non-fatal): {bm_err}")
+                                
+                                # Always generate body map URL (even if empty)
+                                transformed_data = {'markers': markers, 'scale': 1}
+                                bodymap_json = json.dumps({"bodyMap": transformed_data}, ensure_ascii=False)
+                                bodymap_compressed = lz.compressToEncodedURIComponent(bodymap_json)
+                                bodymap_url = f"{GENOGRAM_EDITOR_URL}/body-map?data={bodymap_compressed}"
 
                         except Exception as e:
                             gen_error = f"生成エラー: {str(e)}"
